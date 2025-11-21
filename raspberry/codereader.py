@@ -6,7 +6,7 @@ def get_position(frame, corner):
     height, width = frame.shape[:2]
     center_x = width // 2
     center_y = height // 2
-    for marker_corners in corners:
+    for marker_corners in corner:
         points = marker_corners[0]
         marker_x = int(points[:,0].mean()) #[x0,x1,x2,x3]
         marker_y = int(points[:,1].mean()) #[y0,y1,y2,y3]
@@ -29,10 +29,6 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     corners, ids, rejected = aruco_detector.detectMarkers(gray)
-
-    height, width = frame.shape[:2]
-    center_x = width // 2
-    center_y = height // 2
 
     # Se trova marker, disegna bordi e ID, e calcolo dist
     if ids is not None:
