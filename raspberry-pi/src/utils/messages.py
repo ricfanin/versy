@@ -16,7 +16,7 @@ class MoveMessage(BaseMessage):
 class StopMessage(BaseMessage):
     type: Literal["stop"]
 
-class ArudoFindMessage(BaseMessage):
+class ArucoFindMessage(BaseMessage):
     type: Literal["find_aruco"]
     marker_id: int
 
@@ -49,7 +49,7 @@ class ErrorMessage(BaseMessage):
 
 
 IncomingMessages = Annotated[
-    Union[MoveMessage, StopMessage, ArudoFindMessage, PourMessage],
+    Union[MoveMessage, StopMessage, ArucoFindMessage, PourMessage],
     Field(discriminator="type")
 ]
 
