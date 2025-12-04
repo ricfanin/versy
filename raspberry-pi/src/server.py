@@ -26,6 +26,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
             try:
                 msg = incoming_mex_adapter.validate_json(raw)
+                response = handle_message(msg)
+                await manager.send_message(response.model_dump(), websocket=websocket)
             except Exception as e:
                 await websocket.send_json(
                     ErrorMessage(
@@ -34,7 +36,6 @@ async def websocket_endpoint(websocket: WebSocket):
                     ).model_dump()
                 )
 
-            response = handle_message(msg)
             
             
     except WebSocketDisconnect: 

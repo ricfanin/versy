@@ -9,37 +9,37 @@ class BaseMessage(BaseModel):
 # incoming message
 
 class MoveMessage(BaseMessage):
-    type: Literal["move"]
+    type: Literal["move"] = "move"
     x: float
     y: float
 
 class StopMessage(BaseMessage):
-    type: Literal["stop"]
+    type: Literal["stop"] = "stop"
 
 class ArucoFindMessage(BaseMessage):
-    type: Literal["find_aruco"]
+    type: Literal["find_aruco"] = "find_aruco"
     marker_id: int
 
 class PourMessage(BaseMessage):
-    type: Literal["pour"]
+    type: Literal["pour"] = "pour"
     ml: int
 
 # outgoing message
 
 class StatusMessage(BaseMessage):
-    type: Literal["status"]
+    type: Literal["status"] = "status"
     state: str
     battery: int | None = None
     message: str | None = None
 
 class ArucoFoundMessage(BaseMessage):
-    type: Literal["aruco_found"]
+    type: Literal["aruco_found"] = "aruco_found"
     marker_id: int
     distance_cm: float
     angle_deg: float
 
 class PourCompleteMessage(BaseMessage):
-    type: Literal["pour_complete"]
+    type: Literal["pour_complete"] = "pour_complete"
     ml_poured: float
 
 class ErrorMessage(BaseMessage):
