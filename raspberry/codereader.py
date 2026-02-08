@@ -1,7 +1,7 @@
 import cv2
 import cv2.aruco as aruco
 import math
-
+#a
 def get_position(frame, corner):
     height, width = frame.shape[:2]
     center_x = width // 2
