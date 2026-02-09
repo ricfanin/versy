@@ -8,6 +8,7 @@ __pycache__/
 *.pyc
 
 #config camera
-raspberry-pi/robot/config
+raspberry-pi/robot/config/calibration_images
+raspberry-pi/robot/config/camera_calibration.npz
 
 .vscode
