@@ -1,28 +1,43 @@
+from pathlib import Path
 import cv2
 import cv2.aruco as aruco
 import numpy as np
 
+
 class ArucoDetector:
-    def __init__(self, calibration_path="../config/camera_calibration.npz", marker_size=0.025):
+    def __init__(self, calibration_path=None, marker_size=0.025):
+        if calibration_path is None:
+            # Percorso relativo al file corrente
+            calibration_path = (
+                Path(__file__).parent.parent / "config" / "camera_calibration.npz"
+            )
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.aruco_parameters = aruco.DetectorParameters()
         self.detector = aruco.ArucoDetector(self.aruco_dict, self.aruco_parameters)
         data = np.load(calibration_path)
         self.camera_matrix = data["camera_matrix"]
         self.dist_coeffs = data["dist_coeffs"]
-        self.marker_size=marker_size
+        self.marker_size = marker_size
 
-    def detect(self, frame, show = True):
-        """restituisce array di markers rilevati fonendo: 
+    def detect(self, frame, show=True):
+        """restituisce array di markers rilevati fonendo:
         id, rvc, tvec, distance, roll, pitch, yaw, center"""
-        pframe=self.__preprocess(frame)
+        pframe = self.__preprocess(frame)
         corners, ids, _ = self.detector.detectMarkers(pframe)
-        results=[]
+        results = []
         if ids is not None:
-            rvecs,tvecs,_= aruco.estimatePoseSingleMarkers(
-                corners, self.marker_size, self.camera_matrix, self.dist_coeffs)
+            rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(
+                corners, self.marker_size, self.camera_matrix, self.dist_coeffs
+            )
             for i, marker_id in enumerate(ids):
-                marker_data = self.__process_marker_data(i, marker_id[0], corners[i], rvecs[i][0], tvecs[i][0], frame.shape[0])
+                marker_data = self.__process_marker_data(
+                    i,
+                    marker_id[0],
+                    corners[i],
+                    rvecs[i][0],
+                    tvecs[i][0],
+                    frame.shape[0],
+                )
                 results.append(marker_data)
 
                 if show:
@@ -30,13 +45,13 @@ class ArucoDetector:
         if show:
             cv2.imshow("frame", frame)
             return results
-    
-    def __preprocess(self,frame):
+
+    def __preprocess(self, frame):
         """Converte in grigio e applica blur"""
-        gray=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gaus= cv2.GaussianBlur(gray, (3,3) , 0)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gaus = cv2.GaussianBlur(gray, (3, 3), 0)
         return gaus
-    
+
     def __process_marker_data(self, index, m_id, corners, rvec, tvec, frame_height):
         """Calcola distanze, angoli e organizza il dizionario."""
         center = np.mean(corners[0], axis=0)
@@ -48,43 +63,64 @@ class ArucoDetector:
             "tvec": tvec,
             "distance": float(distance),
             "angles": (roll, pitch, yaw),
-            "center": (int(center[0]), frame_height - int(center[1]))
+            "center": (int(center[0]), frame_height - int(center[1])),
         }
-    
+
     def __draw_debug(self, frame, data, corners):
         """Gestisce tutta la parte grafica sul frame."""
         m_id = data["id"]
         dist = data["distance"]
         r, p, y = data["angles"]
-        
+
         # Assi
-        cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, 
-                          data["rvec"], data["tvec"], self.marker_size * 0.5)
-        
+        cv2.drawFrameAxes(
+            frame,
+            self.camera_matrix,
+            self.dist_coeffs,
+            data["rvec"],
+            data["tvec"],
+            self.marker_size * 0.5,
+        )
+
         # Info Testuali
         top_left = tuple(corners[0][0].astype(int))
         bottom_left = tuple(corners[0][3].astype(int) + 20)
-        
-        cv2.putText(frame, f"ID:{m_id} Dist:{dist*100:.1f}cm", top_left, 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        cv2.putText(frame, f"R:{r:.1f} P:{p:.1f} Y:{y:.1f}", bottom_left, 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-    
-    def __rotation_vector_to_euler_angles(self,rvec):
+
+        cv2.putText(
+            frame,
+            f"ID:{m_id} Dist:{dist * 100:.1f}cm",
+            top_left,
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            2,
+        )
+        cv2.putText(
+            frame,
+            f"R:{r:.1f} P:{p:.1f} Y:{y:.1f}",
+            bottom_left,
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            2,
+        )
+
+    def __rotation_vector_to_euler_angles(self, rvec):
         """Converte il vettore di rotazione in angoli espressi in gradi"""
         R, _ = cv2.Rodrigues(rvec)
-        sy = np.sqrt(R[0, 0]**2 + R[1, 0]**2)
+        sy = np.sqrt(R[0, 0] ** 2 + R[1, 0] ** 2)
         singular = sy < 1e-6
         if not singular:
-            x = np.arctan2(R[2, 1], R[2, 2]) 
+            x = np.arctan2(R[2, 1], R[2, 2])
             y = np.arctan2(-R[2, 0], sy)
             z = np.arctan2(R[1, 0], R[0, 0])
         else:
             x = np.arctan2(-R[1, 2], R[1, 1])
             y = np.arctan2(-R[2, 0], sy)
             z = 0
-            
-        roll  = ((np.degrees(x)) % 360 - 180)
-        pitch = ((np.degrees(y) + 180) % 360 - 180)
-        yaw   = ((np.degrees(z) + 180) % 360 - 180)
+
+        roll = (np.degrees(x)) % 360 - 180
+        pitch = (np.degrees(y) + 180) % 360 - 180
+        yaw = (np.degrees(z) + 180) % 360 - 180
+        yaw = (np.degrees(z) + 180) % 360 - 180
         return roll, pitch, yaw

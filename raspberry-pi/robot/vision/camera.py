@@ -1,7 +1,9 @@
-import cv2
-from aruco_detect import ArucoDetector
 from threading import Thread
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
+import cv2
+
+from .aruco_detect import ArucoDetector
 
 
 class Camera:
@@ -12,14 +14,14 @@ class Camera:
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.cap.set(cv2.CAP_PROP_FPS, 30)
         self._stopped = False
-        self._frame=None
-        self._thread: Optional[Thread]= None
+        self._frame = None
+        self._thread: Optional[Thread] = None
 
     def start(self):
         self._thread = Thread(target=self.update, daemon=True)
         self._thread.start()
         return self
-    
+
     def update(self):
         while not self._stopped:
             ret, frame = self.cap.read()
@@ -49,8 +51,3 @@ class Camera:
             self._thread.join(timeout=1.0)
         self.cap.release()
         cv2.destroyAllWindows()
-
-
-Cameraobj = Camera()
-Cameraobj.start()
-Cameraobj.detect_aruco()
