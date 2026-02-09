@@ -4,16 +4,16 @@ from ..base_state import BaseState
 class InitState(BaseState):
     """Stato di inizializzazione del robot"""
 
-    def enter(self, context):
+    def enter(self, state_machine):
         print("Entering InitState")
         return None
 
-    def execute(self, context):
+    def execute(self, state_machine):
         print("Executing InitState: Testing...")
-        if not context.camera.test_camera():
+        if not state_machine.camera.test_camera():
             print("Camera test failed, retrying...")
             return None
-        if not context.motors.test_motors():
+        if not state_machine.motors.test_motors():
             print("Motors test failed, retrying...")
             return None
         print("Initialization complete - camera and motors OK")
@@ -21,6 +21,6 @@ class InitState(BaseState):
 
         return ScanState()
 
-    def exit(self, context):
+    def exit(self, state_machine):
         print("Exiting InitState")
         return None

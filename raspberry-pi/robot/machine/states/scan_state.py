@@ -1,21 +1,31 @@
+import time
+
 from ..base_state import BaseState
 
 
 class ScanState(BaseState):
-    def enter(self, context):
+    def __init__(self):
+        self.camera_started = False
+
+    def enter(self, state_machine):
         print("Entering Scan State")
-        context.camera.start()
+        if not self.camera_started:
+            state_machine.camera.start()
+            self.camera_started = True
+            time.sleep(0.5)
         return None
 
-    def execute(self, context):
+    def execute(self, state_machine):
         print("Executing Scan State")
-        if context.camera.detect_aruco() != []:
+        res = state_machine.camera.detect_aruco()
+        if res != []:
             from .moving_state import MovingState
 
-            return MovingState()
+            return MovingState(state_machine, res)
         return None
 
-    def exit(self, context):
+    def exit(self, state_machine):
         print("Exiting Scan State")
-        context.camera.stop()
+        # state_machine.camera.stop() non va bene, non devo distruggere la camera perchè la uso dopo e ci mette troppo tempo a fermare il thread, distruggere la finestra e poi ricrearla, quindi lascio la camera accesa e basta
+        # potrei portare tutto in init state e rompere la cam solo quando si spegne il versy
         return None

@@ -7,12 +7,16 @@ from .aruco_detect import ArucoDetector
 
 
 class Camera:
+    FRAME_WIDTH = 320
+    FRAME_HEIGHT = 240
+    FPS = 30
+
     def __init__(self, camera_index=0):
         self.cap = cv2.VideoCapture(camera_index)
         self.aruco_detector = ArucoDetector()
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.cap.set(cv2.CAP_PROP_FPS, 30)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.FRAME_WIDTH)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.FRAME_HEIGHT)
+        self.cap.set(cv2.CAP_PROP_FPS, self.FPS)
         self.__stopped = False
         self.__frame = None
         self.__thread: Optional[Thread] = None
