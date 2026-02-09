@@ -44,10 +44,10 @@ class ArucoDetector:
                 if show:
                     self.__draw_debug(frame, marker_data, corners[i])
         if show:
-            print(f"Rilevati {len(results)} marker(s)")
             cv2.imshow("frame", frame)
             cv2.waitKey(1)  # Necessario per aggiornare la finestra OpenCV
-            return results
+        print(f"Rilevati {len(results)} marker(s)")
+        return results
 
     def __preprocess(self, frame):
         """Converte in grigio e applica blur"""

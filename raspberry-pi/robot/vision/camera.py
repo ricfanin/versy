@@ -32,12 +32,27 @@ class Camera:
         return self.__frame
 
     def detect_aruco(self):
-        print("Detecting ArUco markers...")
         frame = self.get_frame()
         res = []
         if frame is not None:
             res = self.aruco_detector.detect(frame)
         return res
+
+    def test_camera(self) -> bool:
+        """Test method for InitState to verify camera functionality"""
+        try:
+            # Try to capture a frame
+            ret, frame = self.cap.read()
+            if ret and frame is not None:
+                print("Camera test passed")
+                return True
+            else:
+                print("Camera test failed")
+                return False
+
+        except Exception as e:
+            print(f"Camera test failed: {e}")
+            return False
 
     def stop(self):
         self.__stopped = True

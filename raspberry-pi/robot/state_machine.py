@@ -23,7 +23,7 @@ class StateMachine:
         """Chiamata dal main loop per aggiornare lo stato"""
         if not self.running:
             return
-
+            # essenziale altrimenti mi runna enter ed exit ogni volta, così solo execute
         try:
             next_state = self.current_state.execute(self)
 
