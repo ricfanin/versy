@@ -23,7 +23,6 @@ class Camera:
         while not self._stopped:
             ret, frame = self.cap.read()
             self._frame = frame
-        self.stop()
 
     def get_frame(self):
         return self._frame
