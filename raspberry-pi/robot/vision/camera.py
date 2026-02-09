@@ -26,8 +26,7 @@ class Camera:
             self._frame = frame
 
     def get_frame(self):
-        ret, frame = self.cap.read()
-        return frame
+        return self._frame
 
     def detect_aruco(self):
         print("Premi 'q' per uscire dalla detection")
