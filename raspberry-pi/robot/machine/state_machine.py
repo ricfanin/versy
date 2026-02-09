@@ -1,23 +1,36 @@
-from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING
+from .base_state import BaseState
+from .states.init_state import InitState
 
-if TYPE_CHECKING:
-    from ..state_machine import RobotStateMachine
 
-class BaseState(ABC):
-    """Classe base per tutti gli stati del robot"""
-    
-    @abstractmethod
-    def enter(self, context: 'RobotStateMachine') -> None:
-        """Chiamata quando si entra nello stato"""
-        pass
-    
-    @abstractmethod  
-    def execute(self, context: 'RobotStateMachine') -> Optional['BaseState']:
-        """Eseguita ogni ciclo. Ritorna nuovo stato o None"""
-        pass
-    
-    @abstractmethod
-    def exit(self, context: 'RobotStateMachine') -> None:
-        """Chiamata quando si esce dallo stato"""
-        pass
+class StateMachine:
+    def __init__(self, motors):
+        self.current_state: BaseState = InitState()
+        self.running = False
+        self.motors = motors
+
+    def start(self):
+        """Avvia la macchina a stati"""
+        self.running = True
+        self.current_state.enter(self)
+
+    def update(self):
+        """Chiamata dal main loop per aggiornare lo stato"""
+        if not self.running:
+            return
+
+        try:
+            next_state = self.current_state.execute(self)
+
+            if next_state and next_state != self.current_state:
+                self._transition_to(next_state)
+
+        except Exception as e:
+            print(f"❌ Errore nello stato {type(self.current_state).__name__}: {e}")
+
+    def _transition_to(self, new_state: BaseState):
+        """Gestisce la transizione tra stati"""
+        print(f"🔄 {type(self.current_state).__name__} → {type(new_state).__name__}")
+        self.current_state.exit(self)
+        self.previous_state = self.current_state
+        self.current_state = new_state
+        self.current_state.enter(self)

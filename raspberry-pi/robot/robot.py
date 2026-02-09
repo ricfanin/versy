@@ -7,4 +7,7 @@ class Robot:
     def __init__(self):
         self.motors = Motors()
         self.camera = Camera()
-        self.state_machine = StateMachine()
+        self.state_machine = StateMachine(self.motors)
+
+    def start(self):
+        self.state_machine.start()
