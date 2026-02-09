@@ -15,32 +15,32 @@ class ArucoDetector:
     def detect(self, frame, show = True):
         """restituisce array di markers rilevati fonendo: 
         id, rvc, tvec, distance, roll, pitch, yaw, center"""
-        pframe=self._preprocess(frame)
+        pframe=self.__preprocess(frame)
         corners, ids, _ = self.detector.detectMarkers(pframe)
         results=[]
         if ids is not None:
             rvecs,tvecs,_= aruco.estimatePoseSingleMarkers(
                 corners, self.marker_size, self.camera_matrix, self.dist_coeffs)
             for i, marker_id in enumerate(ids):
-                marker_data = self._process_marker_data(i, marker_id[0], corners[i], rvecs[i][0], tvecs[i][0], frame.shape[0])
+                marker_data = self.__process_marker_data(i, marker_id[0], corners[i], rvecs[i][0], tvecs[i][0], frame.shape[0])
                 results.append(marker_data)
 
                 if show:
-                    self._draw_debug(frame, marker_data, corners[i])
+                    self.__draw_debug(frame, marker_data, corners[i])
         if show:
             cv2.imshow("frame", frame)
             return results
     
-    def _preprocess(self,frame):
+    def __preprocess(self,frame):
         """Converte in grigio e applica blur"""
         gray=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gaus= cv2.GaussianBlur(gray, (3,3) , 0)
         return gaus
     
-    def _process_marker_data(self, index, m_id, corners, rvec, tvec, frame_height):
+    def __process_marker_data(self, index, m_id, corners, rvec, tvec, frame_height):
         """Calcola distanze, angoli e organizza il dizionario."""
         center = np.mean(corners[0], axis=0)
-        roll, pitch, yaw = self._rotation_vector_to_euler_angles(rvec)
+        roll, pitch, yaw = self.__rotation_vector_to_euler_angles(rvec)
         distance = np.linalg.norm(tvec)
         return {
             "id": int(m_id),
@@ -51,7 +51,7 @@ class ArucoDetector:
             "center": (int(center[0]), frame_height - int(center[1]))
         }
     
-    def _draw_debug(self, frame, data, corners):
+    def __draw_debug(self, frame, data, corners):
         """Gestisce tutta la parte grafica sul frame."""
         m_id = data["id"]
         dist = data["distance"]
@@ -70,7 +70,7 @@ class ArucoDetector:
         cv2.putText(frame, f"R:{r:.1f} P:{p:.1f} Y:{y:.1f}", bottom_left, 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     
-    def _rotation_vector_to_euler_angles(self,rvec):
+    def __rotation_vector_to_euler_angles(self,rvec):
         """Converte il vettore di rotazione in angoli espressi in gradi"""
         R, _ = cv2.Rodrigues(rvec)
         sy = np.sqrt(R[0, 0]**2 + R[1, 0]**2)
