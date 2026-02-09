@@ -1,21 +1,21 @@
 import time
 
-from robot.robot import Robot
+from robot.state_machine import StateMachine
 
 
 def main():
     """Entry point per testare il robot"""
     try:
-        print("🤖 Inizializzazione robot...")
-        robot = Robot()
+        print("🤖 Inizializzazione state machine...")
+        state_machine = StateMachine()
 
-        print("🚀 Avvio robot...")
-        robot.start()
+        print("🚀 Avvio state machine...")
+        state_machine.start()
 
         # Main loop
         print("🔄 Avvio main loop...")
         while True:
-            robot.state_machine.update()
+            state_machine.update()
             time.sleep(0.1)  # 10Hz update rate
 
     except KeyboardInterrupt:
