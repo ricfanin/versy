@@ -20,7 +20,7 @@ class StateMachine:
 
         try:
             next_state = self.current_state.execute(self)
-
+            
             if next_state and next_state != self.current_state:
                 self._transition_to(next_state)
 
