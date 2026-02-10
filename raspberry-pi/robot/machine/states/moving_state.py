@@ -1,6 +1,10 @@
 import time
 
+from ...utils.debug import get_logger
 from ..base_state import BaseState
+
+# Initialize module logger
+logger = get_logger("states.moving")
 
 
 class MovingState(BaseState):
@@ -23,19 +27,14 @@ class MovingState(BaseState):
             return False
 
     def enter(self, state_machine) -> None:
-        print("Entering MovingState")
+        logger.info("Entering moving state")
         return None
 
     def execute(self, state_machine):
 
         if self.update_data(state_machine):
-            print(
-                "marker: ",
-                self.marker,
-                " target: ",
-                self.target_x,
-                self.target_y,
-                self.target_yaw,
+            logger.debug(
+                f"Marker: {self.marker}, Target: ({self.target_x}, {self.target_y}, {self.target_yaw})"
             )
             # Extract center coordinates from tuple
             center_x, center_y = self.marker["center"]  # center: x, y
@@ -55,8 +54,12 @@ class MovingState(BaseState):
             elif error_yaw < -1:
                 vyaw = -7
 
-            print(f"Errors: X={error_x:.1f} Y={error_y:.1f} Yaw={error_yaw:.1f}")
-            print(f"Speeds: vx={vx:.1f} vy={vy:.1f} vyaw={vyaw:.1f}")
+            logger.verbose(
+                f"Control errors - X: {error_x:.1f}, Y: {error_y:.1f}, Yaw: {error_yaw:.1f}"
+            )
+            logger.verbose(
+                f"Motor speeds - vx: {vx:.1f}, vy: {vy:.1f}, vyaw: {vyaw:.1f}"
+            )
 
             state_machine.motors.setDirectionAndSpeed(vx, vy, vyaw)
             return None
@@ -66,6 +69,6 @@ class MovingState(BaseState):
             return ScanState()
 
     def exit(self, state_machine) -> None:
-        print("Exiting MovingState")
+        logger.info("Exiting moving state")
         state_machine.motors.setDirectionAndSpeed(0, 0, 0)
         return None

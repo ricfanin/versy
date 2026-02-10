@@ -1,16 +1,27 @@
 import numpy as np
-#Import condizionali
+
+from ..utils.debug import get_logger
+
+# Initialize module logger
+logger = get_logger("motors")
+
+# Import condizionali
 try:
     import busio
     from adafruit_bus_device import i2c_device
     from board import SCL, SDA
+
     MOCK_MODE = False
 except ImportError:
-    print("Librerie Raspberry non trovate - usando MOCK MODE")
-    from ..software_testing.mock_raspberry import MockI2C as busio_I2C, i2c_device, SCL, SDA
-    MOCK_MODE= True
+    logger.warning("Raspberry Pi libraries not found - using MOCK MODE")
+    from ..software_testing.mock_raspberry import SCL, SDA, i2c_device
+    from ..software_testing.mock_raspberry import MockI2C as busio_I2C
+
+    MOCK_MODE = True
+
     class busio:
         I2C = busio_I2C
+
 
 class Motors:
     __M_1 = 0
@@ -25,7 +36,7 @@ class Motors:
         self.kiwi_matrix = self.__compute_kiwi_matrix()
 
         if MOCK_MODE:
-            print("Motors in modalità PC, nessun hardware reale!")
+            logger.info("Motors initialized in MOCK MODE - no real hardware")
 
     def __send_motor_power(self, motor, power):
         if power > 100:
@@ -41,13 +52,18 @@ class Motors:
             self.mspi2c.write(bytes(data))
             if MOCK_MODE:
                 motor_names = {0: "M1", 2: "M2", 1: "M3"}
-                print(f"Motore {motor_names.get(motor, motor)}: potenza {power if power < 128 else -(256-power)}")
+                actual_power = power if power < 128 else -(256 - power)
+                logger.verbose(
+                    f"Motor {motor_names.get(motor, motor)}: power {actual_power}"
+                )
         except Exception as e:
-            print("errore nell'invio dei dati tramite i2c:", e)
+            logger.error(f"I2C communication error: {e}")
 
     def __set_powers(self, m1_power, m2_power, m3_power):
         if MOCK_MODE:
-            print(f"[MOTORS] Impostazione potenze: M1={m1_power}, M2={m2_power}, M3={m3_power}")
+            logger.debug(
+                f"Setting motor powers - M1: {m1_power}, M2: {m2_power}, M3: {m3_power}"
+            )
         self.__send_motor_power(self.__M_1, m1_power)
         self.__send_motor_power(self.__M_2, m2_power)
         self.__send_motor_power(self.__M_3, m3_power)
@@ -91,10 +107,10 @@ class Motors:
         try:
             # Test basic motor communication by setting zero power
             self.setDirectionAndSpeed(0, 0, 0)
-            print("Motors test passed")
+            logger.info("Motors test passed")
             return True
         except Exception as e:
-            print(f"Motors test failed: {e}")
+            logger.error(f"Motors test failed: {e}")
             return False
 
 

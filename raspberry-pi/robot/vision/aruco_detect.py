@@ -4,6 +4,11 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 
+from ..utils.debug import get_logger
+
+# Initialize module logger
+logger = get_logger("aruco_detect")
+
 
 class ArucoDetector:
     def __init__(self, calibration_path=None, marker_size=0.025):
@@ -47,7 +52,7 @@ class ArucoDetector:
             cv2.imshow("frame", frame)
             cv2.waitKey(1)  # Necessario per aggiornare la finestra OpenCV
         if results != []:
-            print(f"Rilevati {len(results)} marker(s)")
+            logger.info(f"Rilevati {len(results)} marker(s)")
         return results
 
     def __preprocess(self, frame):

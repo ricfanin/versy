@@ -3,7 +3,11 @@ from typing import Optional, Tuple
 
 import cv2
 
+from ..utils.debug import get_logger
 from .aruco_detect import ArucoDetector
+
+# Initialize module logger
+logger = get_logger("vision.camera")
 
 
 class Camera:
@@ -23,7 +27,7 @@ class Camera:
 
     def start(self):
         self.__thread = Thread(target=self.update, daemon=True)
-        print("Starting camera thread...")
+        logger.info("Starting camera thread")
         self.__thread.start()
         return self
 
@@ -48,19 +52,21 @@ class Camera:
             # Try to capture a frame
             ret, frame = self.cap.read()
             if ret and frame is not None:
-                print("Camera test passed")
+                logger.info("Camera test passed")
                 return True
             else:
-                print("Camera test failed")
+                logger.error("Camera test failed - no frame captured")
                 return False
 
         except Exception as e:
-            print(f"Camera test failed: {e}")
+            logger.error(f"Camera test failed: {e}")
             return False
 
     def stop(self):
+        logger.info("Stopping camera")
         self.__stopped = True
         if self.__thread and self.__thread.is_alive():
             self.__thread.join(timeout=1.0)
         self.cap.release()
         cv2.destroyAllWindows()
+        logger.info("Camera stopped successfully")
