@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
-
 if TYPE_CHECKING:
     from ..state_machine import StateMachine
 
