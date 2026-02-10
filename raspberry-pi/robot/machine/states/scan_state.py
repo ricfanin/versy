@@ -24,6 +24,4 @@ class ScanState(BaseState):
 
     def exit(self, state_machine):
         logger.info("Exiting scan state")
-        # state_machine.camera.stop() non va bene, non devo distruggere la camera perchè la uso dopo e ci mette troppo tempo a fermare il thread, distruggere la finestra e poi ricrearla, quindi lascio la camera accesa e basta
-        # potrei portare tutto in init state e rompere la cam solo quando si spegne il versy
         return None

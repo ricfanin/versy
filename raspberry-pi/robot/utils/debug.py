@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -29,20 +28,18 @@ class DebugLogger:
             self._initialized = True
 
     def _load_config(self):
-        """Load global log level from .env file"""
+        """Load global log level from first line of .env file"""
         env_file = Path(__file__).parent.parent.parent / ".env"
         if env_file.exists():
             with open(env_file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, value = line.split("=", 1)
-                        if key.strip() == "DEBUG_LEVEL":
-                            try:
-                                self.level = LogLevel[value.strip().upper()]
-                            except KeyError:
-                                pass
-                            break
+                first_line = f.readline().strip()
+                if "=" in first_line:
+                    key, value = first_line.split("=", 1)
+                    if key.strip() == "DEBUG_LEVEL":
+                        try:
+                            self.level = LogLevel[value.strip().upper()]
+                        except KeyError:
+                            pass
 
     def _should_log(self, level: LogLevel) -> bool:
         """Check if message should be logged"""
