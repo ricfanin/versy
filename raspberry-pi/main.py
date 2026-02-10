@@ -1,30 +1,42 @@
 import time
 
 from robot.state_machine import StateMachine
+from robot.utils.debug import get_logger
+
+# Initialize module logger
+logger = get_logger("main")
 
 
 def main():
-    """Entry point per testare il robot"""
+    """Entry point to test the robot"""
     try:
-        print("🤖 Inizializzazione state machine...")
+        logger.info("Initializing robot system")
         state_machine = StateMachine()
 
-        print("🚀 Avvio state machine...")
+        logger.info("Starting state machine")
         state_machine.start()
 
         # Main loop
-        print("🔄 Avvio main loop...")
+        logger.info("Starting main loop at 20Hz")
+        loop_count = 0
         while True:
             state_machine.update()
-            time.sleep(0.1)  # 10Hz update rate
+
+            # Log heartbeat every 5 seconds (100 iterations at 20Hz)
+            if loop_count % 100 == 0:
+                logger.debug(f"Main loop heartbeat - iteration {loop_count}")
+
+            loop_count += 1
+            time.sleep(0.05)  # 20Hz update rate
 
     except KeyboardInterrupt:
-        print("\n🛑 Arresto richiesto dall'utente")
+        logger.warning("Shutdown requested by user")
     except Exception as e:
-        print(f"❌ Errore: {e}")
+        logger.error(f"Fatal error occurred: {e}")
     finally:
+        logger.info("Cleaning up resources")
         state_machine.stop()
-        print("🔧 Cleanup completato")
+        logger.info("Shutdown completed")
 
 
 if __name__ == "__main__":

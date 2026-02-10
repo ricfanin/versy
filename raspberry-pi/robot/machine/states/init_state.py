@@ -1,27 +1,31 @@
+from ...utils.debug import get_logger
 from ..base_state import BaseState
+
+# Initialize module logger
+logger = get_logger("states.init")
 
 
 class InitState(BaseState):
     """Stato di inizializzazione del robot"""
 
     def enter(self, state_machine):
-        print("Entering InitState")
+        logger.info("Entering initialization state")
         return None
 
     def execute(self, state_machine):
-        print("Executing InitState: Testing...")
+        logger.info("Executing initialization: testing components")
         if not state_machine.camera.test_camera():
-            print("Camera test failed, retrying...")
+            logger.error("Camera test failed, retrying")
             return None
         if not state_machine.motors.test_motors():
-            print("Motors test failed, retrying...")
+            logger.error("Motors test failed, retrying")
             return None
-        print("Initialization complete - camera and motors OK")
+        logger.info("Initialization complete - camera and motors OK")
         from .scan_state import ScanState
 
         return ScanState()
 
     def exit(self, state_machine):
-        print("Exiting InitState")
+        logger.info("Exiting initialization state")
         state_machine.camera.start()
         return None
