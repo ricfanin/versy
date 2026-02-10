@@ -1,9 +1,9 @@
 import numpy as np
 
-from ..utils.debug import get_logger
+# from ..utils.debug import get_logger
 
 # Initialize module logger
-logger = get_logger("motors")
+# logger = get_logger("motors")
 
 # Import condizionali
 try:
@@ -13,7 +13,7 @@ try:
 
     MOCK_MODE = False
 except ImportError:
-    logger.warning("Raspberry Pi libraries not found - using MOCK MODE")
+    # logger.warning("Raspberry Pi libraries not found - using MOCK MODE")
     from ..software_testing.mock_raspberry import SCL, SDA, i2c_device
     from ..software_testing.mock_raspberry import MockI2C as busio_I2C
 
@@ -35,8 +35,8 @@ class Motors:
         self.mspi2c = i2c_device.I2CDevice(i2c_bus, 0x10)
         self.kiwi_matrix = self.__compute_kiwi_matrix()
 
-        if MOCK_MODE:
-            logger.info("Motors initialized in MOCK MODE - no real hardware")
+        # if MOCK_MODE:
+            # logger.info("Motors initialized in MOCK MODE - no real hardware")
 
     def __send_motor_power(self, motor, power):
         if power > 100:
@@ -53,17 +53,18 @@ class Motors:
             if MOCK_MODE:
                 motor_names = {0: "M1", 2: "M2", 1: "M3"}
                 actual_power = power if power < 128 else -(256 - power)
-                logger.verbose(
-                    f"Motor {motor_names.get(motor, motor)}: power {actual_power}"
-                )
+                # logger.verbose(
+                #     f"Motor {motor_names.get(motor, motor)}: power {actual_power}"
+                # )
         except Exception as e:
-            logger.error(f"I2C communication error: {e}")
+            print("ok")
+            # logger.error(f"I2C communication error: {e}")
 
     def __set_powers(self, m1_power, m2_power, m3_power):
-        if MOCK_MODE:
-            logger.debug(
-                f"Setting motor powers - M1: {m1_power}, M2: {m2_power}, M3: {m3_power}"
-            )
+        # if MOCK_MODE:
+                # logger.debug(
+                #     f"Setting motor powers - M1: {m1_power}, M2: {m2_power}, M3: {m3_power}"
+                # )
         self.__send_motor_power(self.__M_1, m1_power)
         self.__send_motor_power(self.__M_2, m2_power)
         self.__send_motor_power(self.__M_3, m3_power)
@@ -100,6 +101,7 @@ class Motors:
     def setDirectionAndSpeed(self, vx, vy, vang=0):
         """Imposta la direzione e la velocità dei motori."""
         p1, p2, p3 = self.__computeKiwiDrivePowers(vx, vy, vang)
+        print(p1, p2, p3)
         self.__set_powers(-int(p1), -int(p2), -int(p3))
 
     def test_motors(self) -> bool:
@@ -107,13 +109,19 @@ class Motors:
         try:
             # Test basic motor communication by setting zero power
             self.setDirectionAndSpeed(0, 0, 0)
-            logger.info("Motors test passed")
+            # logger.info("Motors test passed")
             return True
         except Exception as e:
-            logger.error(f"Motors test failed: {e}")
+            # logger.error(f"Motors test failed: {e}")
             return False
 
 
 if __name__ == "__main__":
     motors = Motors()
-    motors.setDirectionAndSpeed(0, 80, 0)
+    motors.test_motors()
+    while(True):
+        motors.setDirectionAndSpeed(0, 0, 0)
+
+# avanti -> -vy
+# rotazione oraria -> -vang
+# destra -> vx ma drifta a sud-est
