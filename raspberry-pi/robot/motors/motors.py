@@ -1,8 +1,16 @@
-import busio
 import numpy as np
-from adafruit_bus_device import i2c_device
-from board import SCL, SDA
-
+#Import condizionali
+try:
+    import busio
+    from adafruit_bus_device import i2c_device
+    from board import SCL, SDA
+    MOCK_MODE = False
+except ImportError:
+    print("Librerie Raspberry non trovate - usando MOCK MODE")
+    from ..software_testing.mock_raspberry import MockI2C as busio_I2C, i2c_device, SCL, SDA
+    MOCK_MODE= True
+    class busio:
+        I2C = busio_I2C
 
 class Motors:
     __M_1 = 0
@@ -16,6 +24,9 @@ class Motors:
         self.mspi2c = i2c_device.I2CDevice(i2c_bus, 0x10)
         self.kiwi_matrix = self.__compute_kiwi_matrix()
 
+        if MOCK_MODE:
+            print("Motors in modalità PC, nessun hardware reale!")
+
     def __send_motor_power(self, motor, power):
         if power > 100:
             power = 100
@@ -28,10 +39,15 @@ class Motors:
         data = [motor, power]
         try:
             self.mspi2c.write(bytes(data))
+            if MOCK_MODE:
+                motor_names = {0: "M1", 2: "M2", 1: "M3"}
+                print(f"Motore {motor_names.get(motor, motor)}: potenza {power if power < 128 else -(256-power)}")
         except Exception as e:
             print("errore nell'invio dei dati tramite i2c:", e)
 
     def __set_powers(self, m1_power, m2_power, m3_power):
+        if MOCK_MODE:
+            print(f"[MOTORS] Impostazione potenze: M1={m1_power}, M2={m2_power}, M3={m3_power}")
         self.__send_motor_power(self.__M_1, m1_power)
         self.__send_motor_power(self.__M_2, m2_power)
         self.__send_motor_power(self.__M_3, m3_power)
