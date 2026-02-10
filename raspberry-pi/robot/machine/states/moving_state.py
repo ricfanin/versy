@@ -1,5 +1,5 @@
 import time
-
+import cv2
 from ..base_state import BaseState
 
 
@@ -9,8 +9,9 @@ class MovingState(BaseState):
     def __init__(self, state_machine, aruco_data):
         self.marker = aruco_data[0]
         # Target: centro del frame
-        self.target_x = state_machine.camera.FRAME_WIDTH // 2
-        self.target_y = state_machine.camera.FRAME_HEIGHT // 2 + 65
+        frame = state_machine.camera.get_frame()
+        self.target_x = frame.shape[1] // 2
+        self.target_y = frame.shape[0] // 2
         self.target_yaw = 0  # Vogliamo che il marker sia frontale (yaw = 0)
 
     def update_data(self, state_machine):
@@ -29,14 +30,14 @@ class MovingState(BaseState):
     def execute(self, state_machine):
 
         if self.update_data(state_machine):
-            print(
-                "marker: ",
-                self.marker,
-                " target: ",
-                self.target_x,
-                self.target_y,
-                self.target_yaw,
-            )
+        #     print(
+        #         "marker: ",
+        #         self.marker,
+        #         " target: ",
+        #         self.target_x,
+        #         self.target_y,
+        #         self.target_yaw,
+        #     )
             # Extract center coordinates from tuple
             center_x, center_y = self.marker["center"]  # center: x, y
             # Calcola errori (quanto siamo lontani dal target)
@@ -54,9 +55,11 @@ class MovingState(BaseState):
                 vyaw = 7
             elif error_yaw < -1:
                 vyaw = -7
-
+            print("="*60)
             print(f"Errors: X={error_x:.1f} Y={error_y:.1f} Yaw={error_yaw:.1f}")
-            print(f"Speeds: vx={vx:.1f} vy={vy:.1f} vyaw={vyaw:.1f}")
+            print("="*60)
+            print(f"Speeds: vx={vx:.1f} vy={vy:.1f} vyaw={vyaw:.1f}\n")
+            print("="*60)
 
             state_machine.motors.setDirectionAndSpeed(vx, vy, vyaw)
             return None

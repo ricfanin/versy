@@ -41,13 +41,13 @@ class Motors:
             self.mspi2c.write(bytes(data))
             if MOCK_MODE:
                 motor_names = {0: "M1", 2: "M2", 1: "M3"}
-                print(f"Motore {motor_names.get(motor, motor)}: potenza {power if power < 128 else -(256-power)}")
+                #print(f"Motore {motor_names.get(motor, motor)}: potenza {power if power < 128 else -(256-power)}")
         except Exception as e:
             print("errore nell'invio dei dati tramite i2c:", e)
 
     def __set_powers(self, m1_power, m2_power, m3_power):
-        if MOCK_MODE:
-            print(f"[MOTORS] Impostazione potenze: M1={m1_power}, M2={m2_power}, M3={m3_power}")
+        #if MOCK_MODE:
+            #print(f"[MOTORS] Impostazione potenze: M1={m1_power}, M2={m2_power}, M3={m3_power}")
         self.__send_motor_power(self.__M_1, m1_power)
         self.__send_motor_power(self.__M_2, m2_power)
         self.__send_motor_power(self.__M_3, m3_power)

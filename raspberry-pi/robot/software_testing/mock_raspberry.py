@@ -5,12 +5,14 @@ class MockI2CDevice:
         print(f"[MOCK] I2CDEVICE inizializzato all'indirizzo {hex(address)}")
     
     def write(self, data):
-        print(f"[MOCK] I2C write: {list(data)}")
+        non_voglio_stampa=True
+        #print(f"[MOCK] I2C write: {list(data)}")
     
 class MockI2C:
     def __init__(self, scl, sda):
         # Simula l'inizializzazione del bus I2C con i pin SCL e SDA
         print(f"[MOCK] I2C inizializzato con SCL={scl}, SDA={sda}")
+
 
 #Mock per board
 class MockPin:
