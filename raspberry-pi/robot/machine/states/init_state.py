@@ -23,4 +23,5 @@ class InitState(BaseState):
 
     def exit(self, state_machine):
         print("Exiting InitState")
+        state_machine.camera.start()
         return None

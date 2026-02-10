@@ -26,7 +26,7 @@ class StateMachine:
             # essenziale altrimenti mi runna enter ed exit ogni volta, così solo execute
         try:
             next_state = self.current_state.execute(self)
-            
+
             if next_state and next_state != self.current_state:
                 self._transition_to(next_state)
 
@@ -44,6 +44,5 @@ class StateMachine:
     def stop(self):
         """Ferma la macchina a stati"""
         self.running = False
-        if hasattr(self.current_state, "exit"):
-            self.current_state.exit(self)
-            self.camera.stop()
+        self.current_state.exit(self)
+        self.camera.stop()

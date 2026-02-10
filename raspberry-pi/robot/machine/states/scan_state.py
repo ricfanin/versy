@@ -4,15 +4,9 @@ from ..base_state import BaseState
 
 
 class ScanState(BaseState):
-    def __init__(self):
-        self.camera_started = False
 
     def enter(self, state_machine):
         print("Entering Scan State")
-        if not self.camera_started:
-            state_machine.camera.start()
-            self.camera_started = True
-            time.sleep(0.5)
         return None
 
     def execute(self, state_machine):
