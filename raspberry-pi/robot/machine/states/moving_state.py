@@ -13,8 +13,9 @@ class MovingState(BaseState):
     def __init__(self, state_machine, aruco_data):
         self.marker = aruco_data[0]
         # Target: centro del frame
-        self.target_x = state_machine.camera.FRAME_WIDTH // 2
-        self.target_y = state_machine.camera.FRAME_HEIGHT // 2 + 65
+        frame = state_machine.camera.get_frame()
+        self.target_x = frame.shape[1] // 2
+        self.target_y = frame.shape[0] // 2
         self.target_yaw = 0  # Vogliamo che il marker sia frontale (yaw = 0)
 
     def update_data(self, state_machine):

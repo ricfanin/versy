@@ -113,6 +113,11 @@ class ArucoDetector:
             (0, 255, 0),
             2,
         )
+        width = frame.shape[1]
+        height = frame.shape[0]
+        target_x = width // 2
+        target_y = height // 2
+        cv2.circle(frame, (target_x, target_y), radius=2, color=(255,0,0), thickness=-1)
 
     def __rotation_vector_to_euler_angles(self, rvec):
         """Converte il vettore di rotazione in angoli espressi in gradi"""
