@@ -46,7 +46,8 @@ class ArucoDetector:
         if show:
             cv2.imshow("frame", frame)
             cv2.waitKey(1)  # Necessario per aggiornare la finestra OpenCV
-        print(f"Rilevati {len(results)} marker(s)")
+        if results != []:
+            print(f"Rilevati {len(results)} marker(s)")
         return results
 
     def __preprocess(self, frame):

@@ -27,7 +27,6 @@ class MovingState(BaseState):
         return None
 
     def execute(self, state_machine):
-        print("Executing MovingState")
 
         if self.update_data(state_machine):
             print(

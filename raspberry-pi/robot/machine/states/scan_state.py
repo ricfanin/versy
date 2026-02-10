@@ -16,7 +16,6 @@ class ScanState(BaseState):
         return None
 
     def execute(self, state_machine):
-        print("Executing Scan State")
         res = state_machine.camera.detect_aruco()
         if res != []:
             from .moving_state import MovingState
