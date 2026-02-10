@@ -23,6 +23,7 @@ def main():
     except Exception as e:
         print(f"❌ Errore: {e}")
     finally:
+        state_machine.stop()
         print("🔧 Cleanup completato")
 
 

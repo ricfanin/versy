@@ -46,3 +46,4 @@ class StateMachine:
         self.running = False
         if hasattr(self.current_state, "exit"):
             self.current_state.exit(self)
+            self.camera.stop()
