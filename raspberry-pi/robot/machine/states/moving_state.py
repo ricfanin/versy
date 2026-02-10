@@ -59,12 +59,11 @@ class MovingState(BaseState):
             print(f"Speeds: vx={vx:.1f} vy={vy:.1f} vyaw={vyaw:.1f}")
 
             state_machine.motors.setDirectionAndSpeed(vx, vy, vyaw)
+            return None
+        else:
+            from .scan_state import ScanState
 
-            if abs(error_x) < 20 and abs(error_y) < 20 and abs(error_yaw) < 5:
-                from .scan_state import ScanState
-
-                return ScanState()
-        return None
+            return ScanState()
 
     def exit(self, state_machine) -> None:
         print("Exiting MovingState")
