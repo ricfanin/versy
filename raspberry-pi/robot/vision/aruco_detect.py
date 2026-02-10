@@ -70,7 +70,7 @@ class ArucoDetector:
             "id": int(m_id),
             "rvec": rvec,
             "tvec": tvec,
-            "distance": float(distance),
+            "distance": float(distance)*100,
             "angles": (roll, pitch, yaw),
             "center": (int(center[0]), frame_height - int(center[1])),
         }
@@ -97,7 +97,7 @@ class ArucoDetector:
 
         cv2.putText(
             frame,
-            f"ID:{m_id} Dist:{dist * 100:.1f}cm",
+            f"ID:{m_id} Dist:{dist :.1f}cm",
             top_left,
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
