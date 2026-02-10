@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import cv2
 import cv2.aruco as aruco
 import numpy as np
@@ -44,7 +45,9 @@ class ArucoDetector:
                     self.__draw_debug(frame, marker_data, corners[i])
         if show:
             cv2.imshow("frame", frame)
-            return results
+            cv2.waitKey(1)  # Necessario per aggiornare la finestra OpenCV
+        print(f"Rilevati {len(results)} marker(s)")
+        return results
 
     def __preprocess(self, frame):
         """Converte in grigio e applica blur"""

@@ -1,12 +1,18 @@
-from .base_state import BaseState
-from .states.init_state import InitState
+from .machine.base_state import BaseState
+from .machine.states.init_state import InitState
+from .motors.motors import Motors
+from .vision.camera import Camera
 
 
 class StateMachine:
-    def __init__(self, motors):
+    def __init__(self):
+        self.motors = Motors()
+        self.camera = Camera()
+
+        # State machine properties (moved from StateMachine)
         self.current_state: BaseState = InitState()
         self.running = False
-        self.motors = motors
+        self.previous_state = None
 
     def start(self):
         """Avvia la macchina a stati"""
@@ -17,7 +23,7 @@ class StateMachine:
         """Chiamata dal main loop per aggiornare lo stato"""
         if not self.running:
             return
-
+            # essenziale altrimenti mi runna enter ed exit ogni volta, così solo execute
         try:
             next_state = self.current_state.execute(self)
             
@@ -34,3 +40,9 @@ class StateMachine:
         self.previous_state = self.current_state
         self.current_state = new_state
         self.current_state.enter(self)
+
+    def stop(self):
+        """Ferma la macchina a stati"""
+        self.running = False
+        if hasattr(self.current_state, "exit"):
+            self.current_state.exit(self)

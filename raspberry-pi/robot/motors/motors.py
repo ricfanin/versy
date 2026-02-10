@@ -70,7 +70,18 @@ class Motors:
         p1, p2, p3 = self.__computeKiwiDrivePowers(vx, vy, vang)
         self.__set_powers(-int(p1), -int(p2), -int(p3))
 
+    def test_motors(self) -> bool:
+        """Test method for InitState to verify motors functionality"""
+        try:
+            # Test basic motor communication by setting zero power
+            self.setDirectionAndSpeed(0, 0, 0)
+            print("Motors test passed")
+            return True
+        except Exception as e:
+            print(f"Motors test failed: {e}")
+            return False
+
 
 if __name__ == "__main__":
     motors = Motors()
-    motors.setDirectionAndSpeed(100, 0, 0)
+    motors.setDirectionAndSpeed(0, 80, 0)

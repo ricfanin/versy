@@ -13,35 +13,50 @@ class Camera:
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.cap.set(cv2.CAP_PROP_FPS, 30)
-        self._stopped = False
-        self._frame = None
-        self._thread: Optional[Thread] = None
+        self.__stopped = False
+        self.__frame = None
+        self.__thread: Optional[Thread] = None
 
     def start(self):
-        self._thread = Thread(target=self.update, daemon=True)
-        self._thread.start()
+        self.__thread = Thread(target=self.update, daemon=True)
+        print("Starting camera thread...")
+        self.__thread.start()
         return self
 
     def update(self):
-        while not self._stopped:
+        while not self.__stopped:
             ret, frame = self.cap.read()
-            self._frame = frame
+            self.__frame = frame
 
     def get_frame(self):
-        return self._frame
+        return self.__frame
 
     def detect_aruco(self):
-        print("Premi 'q' per uscire dalla detection")
         frame = self.get_frame()
-        results= None
+        res = []
         if frame is not None:
-            results = self.aruco_detector.detect(frame)
-        return results
+            res = self.aruco_detector.detect(frame)
+        return res
 
+    def test_camera(self) -> bool:
+        """Test method for InitState to verify camera functionality"""
+        try:
+            # Try to capture a frame
+            ret, frame = self.cap.read()
+            if ret and frame is not None:
+                print("Camera test passed")
+                return True
+            else:
+                print("Camera test failed")
+                return False
+
+        except Exception as e:
+            print(f"Camera test failed: {e}")
+            return False
 
     def stop(self):
-        self._stopped = True
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=1.0)
+        self.__stopped = True
+        if self.__thread and self.__thread.is_alive():
+            self.__thread.join(timeout=1.0)
         self.cap.release()
         cv2.destroyAllWindows()
