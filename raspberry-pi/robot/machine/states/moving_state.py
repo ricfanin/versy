@@ -48,10 +48,10 @@ class MovingState(BaseState):
         if abs(error_x) > 30:
             if error_x > 0:
                 # rotazione anti oraria
-                self.sm.motors.setDirectionAndSpeed(0, 0, -50)
+                self.sm.motors.setDirectionAndSpeed(0, 0, -30)
             else:
                 # rotazione oraria e ritorno
-                self.sm.motors.setDirectionAndSpeed(0, 0, 50)
+                self.sm.motors.setDirectionAndSpeed(0, 0, 30)
             self.updated = False
             return False
         return True
