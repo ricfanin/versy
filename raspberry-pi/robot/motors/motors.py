@@ -2,6 +2,10 @@ import time
 
 import numpy as np
 
+from ..utils.debug import get_logger
+
+logger = get_logger("motors")
+
 # from ..utils.debug import get_logger
 
 # Initialize module logger
@@ -30,7 +34,7 @@ class Motors:
     __M_2 = 2
     __M_3 = 1
     __K_ROT = 1
-    __ANGOLO_OFFSET_CAMERA_GRADI = 1.9
+    __ANGOLO_OFFSET_CAMERA_GRADI = 0
 
     def __init__(self):
         i2c_bus = busio.I2C(SCL, SDA)
@@ -41,17 +45,12 @@ class Motors:
         # logger.info("Motors initialized in MOCK MODE - no real hardware")
 
     def __send_motor_power(self, motor, power):
-        # non tiene le proporzioni
-        # if power > 100:
-        #     power = 100
-        # if power < -100:
-        #     power = -100
 
         if power < 0:
             power = 256 - abs(power)
 
         data = [motor, power]
-        print(data)
+
         try:
             self.mspi2c.write(bytes(data))
             if MOCK_MODE:
@@ -61,7 +60,9 @@ class Motors:
                 #     f"Motor {motor_names.get(motor, motor)}: power {actual_power}"
                 # )
         except Exception as e:
-            print("ok")
+            logger.warning("riprovo perchè fallito")
+            time.sleep(0.01)
+            self.mspi2c.write(bytes(data))
             # logger.error(f"I2C communication error: {e}")
 
     def __set_powers(self, m1_power, m2_power, m3_power):
@@ -100,20 +101,20 @@ class Motors:
         v = np.array([vx, vy, vang])
 
         potenze = self.kiwi_matrix @ v
-
+        logger.debug(f"before {potenze}")
         max_power = max(abs(potenze))
         min_power = min(abs(potenze))
-        # DA RIVEDERE
-        if max_power != min_power:
-            potenze = 25 + ((potenze - min_power) / (max_power - min_power)) * 75
+        signs = np.sign(potenze)
+        zeros = potenze != 0
+        potenze = abs(potenze)
+
+        if max_power > 100:
+            mult = 75 / max_power
+            potenze = signs * (25 + potenze * mult) * zeros
+            logger.debug(f"after {potenze}")
         elif min_power < 25:
-            potenze = [25.0, 25.0, 25.0]
-        elif max_power > 100:
-            potenze = [100.0, 100.0, 100.0]
-
-        # potenze[1] *= 1.2  # DA RIVEDERE
-        # potenze[2] *= 1.2
-
+            potenze = signs * (25 + potenze * 0.75) * zeros
+            logger.debug(f"after {potenze}")
         return potenze
 
     def setDirectionAndSpeed(self, vx, vy, vang=0):
@@ -144,9 +145,9 @@ class Motors:
 if __name__ == "__main__":
     motors = Motors()
     # motors.test_motors()
-
-    motors.setDirectionAndSpeed(0, 0, 40)
     time.sleep(5)
+    motors.setDirectionAndSpeed(0, 0, -10)
+    time.sleep(2)
 
     motors.stop_motors()
     # motors.set_powers(80, 0, 0)
@@ -156,10 +157,6 @@ if __name__ == "__main__":
     # motors.set_powers(0, 0, 80)
     # time.sleep(2)
     # motors.set_powers(0, 0, 0)
-
-# avanti -> -vy
-# rotazione oraria -> -vang
-# destra -> vx
 
 # m1 -> 60
 # m2 -> 40

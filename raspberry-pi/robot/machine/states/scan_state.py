@@ -10,7 +10,7 @@ logger = get_logger("states.scan")
 class ScanState(BaseState):
     def enter(self, state_machine):
         logger.info("Entering scan state")
-        # state_machine.motors.setDirectionAndSpeed(0, 0, 15) DA RI-ATTIVARE
+        # state_machine.motors.setDirectionAndSpeed(0, 0, 15) DA RIMETTERE
         return None
 
     def execute(self, state_machine):
