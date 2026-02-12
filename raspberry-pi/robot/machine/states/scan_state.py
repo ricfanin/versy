@@ -10,7 +10,7 @@ logger = get_logger("states.scan")
 class ScanState(BaseState):
     def enter(self, state_machine):
         logger.info("Entering scan state")
-        state_machine.motors.setDirectionAndSpeed(0, 0, 15)
+        # state_machine.motors.setDirectionAndSpeed(0, 0, 15) DA RI-ATTIVARE
         return None
 
     def execute(self, state_machine):
@@ -19,11 +19,11 @@ class ScanState(BaseState):
             logger.debug(f"ArUco markers detected: {len(res)} markers found")
             from .moving_state import MovingState
 
-            return MovingState(state_machine, res)
+            return MovingState(state_machine, res[0])
         logger.verbose("No ArUco markers detected, continuing scan")
         return None
 
     def exit(self, state_machine):
         logger.info("Exiting scan state")
-        state_machine.motors.setDirectionAndSpeed(0, 0, 0)
+        state_machine.motors.stop_motors()
         return None

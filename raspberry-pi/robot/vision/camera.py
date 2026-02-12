@@ -39,6 +39,9 @@ class Camera:
     def get_frame(self):
         return self.__frame
 
+    def frame_shape(self):
+        return self.__frame.shape
+
     def detect_aruco(self):
         frame = self.get_frame()
         res = []

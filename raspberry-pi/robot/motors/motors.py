@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 # from ..utils.debug import get_logger
@@ -27,7 +29,7 @@ class Motors:
     __M_1 = 0
     __M_2 = 2
     __M_3 = 1
-    __K_ROT = 2
+    __K_ROT = 1
     __ANGOLO_OFFSET_CAMERA_GRADI = 1.9
 
     def __init__(self):
@@ -36,18 +38,20 @@ class Motors:
         self.kiwi_matrix = self.__compute_kiwi_matrix()
 
         # if MOCK_MODE:
-            # logger.info("Motors initialized in MOCK MODE - no real hardware")
+        # logger.info("Motors initialized in MOCK MODE - no real hardware")
 
     def __send_motor_power(self, motor, power):
-        if power > 100:
-            power = 100
-        if power < -100:
-            power = -100
+        # non tiene le proporzioni
+        # if power > 100:
+        #     power = 100
+        # if power < -100:
+        #     power = -100
 
         if power < 0:
             power = 256 - abs(power)
 
         data = [motor, power]
+        print(data)
         try:
             self.mspi2c.write(bytes(data))
             if MOCK_MODE:
@@ -62,9 +66,9 @@ class Motors:
 
     def __set_powers(self, m1_power, m2_power, m3_power):
         # if MOCK_MODE:
-                # logger.debug(
-                #     f"Setting motor powers - M1: {m1_power}, M2: {m2_power}, M3: {m3_power}"
-                # )
+        # logger.debug(
+        #     f"Setting motor powers - M1: {m1_power}, M2: {m2_power}, M3: {m3_power}"
+        # )
         self.__send_motor_power(self.__M_1, m1_power)
         self.__send_motor_power(self.__M_2, m2_power)
         self.__send_motor_power(self.__M_3, m3_power)
@@ -96,32 +100,67 @@ class Motors:
         v = np.array([vx, vy, vang])
 
         potenze = self.kiwi_matrix @ v
+
+        max_power = max(abs(potenze))
+        min_power = min(abs(potenze))
+        # DA RIVEDERE
+        if max_power != min_power:
+            potenze = 25 + ((potenze - min_power) / (max_power - min_power)) * 75
+        elif min_power < 25:
+            potenze = [25.0, 25.0, 25.0]
+        elif max_power > 100:
+            potenze = [100.0, 100.0, 100.0]
+
+        # potenze[1] *= 1.2  # DA RIVEDERE
+        # potenze[2] *= 1.2
+
         return potenze
 
     def setDirectionAndSpeed(self, vx, vy, vang=0):
         """Imposta la direzione e la velocità dei motori."""
-        p1, p2, p3 = self.__computeKiwiDrivePowers(vx, vy, vang)
-        print(p1, p2, p3)
+
+        # avanti -> vy
+        # rotazione oraria -> vang
+        # destra -> vx
+
+        p1, p2, p3 = self.__computeKiwiDrivePowers(vx, -vy, -vang)
         self.__set_powers(-int(p1), -int(p2), -int(p3))
 
     def test_motors(self) -> bool:
         """Test method for InitState to verify motors functionality"""
         try:
             # Test basic motor communication by setting zero power
-            self.setDirectionAndSpeed(0, 0, 0)
+            self.stop_motors()
             # logger.info("Motors test passed")
             return True
         except Exception as e:
             # logger.error(f"Motors test failed: {e}")
             return False
 
+    def stop_motors(self):
+        self.__set_powers(0, 0, 0)
+
 
 if __name__ == "__main__":
     motors = Motors()
-    motors.test_motors()
-    while(True):
-        motors.setDirectionAndSpeed(0, 0, 0)
+    # motors.test_motors()
+
+    motors.setDirectionAndSpeed(0, 0, 40)
+    time.sleep(5)
+
+    motors.stop_motors()
+    # motors.set_powers(80, 0, 0)
+    # time.sleep(2)
+    # motors.set_powers(0, 80, 0)
+    # time.sleep(2)
+    # motors.set_powers(0, 0, 80)
+    # time.sleep(2)
+    # motors.set_powers(0, 0, 0)
 
 # avanti -> -vy
 # rotazione oraria -> -vang
-# destra -> vx ma drifta a sud-est
+# destra -> vx
+
+# m1 -> 60
+# m2 -> 40
+# m3 -> 60
