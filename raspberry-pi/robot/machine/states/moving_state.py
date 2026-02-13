@@ -8,7 +8,7 @@ logger = get_logger("states.moving")
 class MovingState(BaseState):
     """Stato di movimento del robot"""
 
-    def __init__(self, state_machine: "StateMachine", marker):
+    def __init__(self, state_machine: "StateMachine", marker: dict):
         self.updated = False
         self.sm = state_machine
 
@@ -51,11 +51,11 @@ class MovingState(BaseState):
             self.sm.motors.stop_motors()
             self.retries += 1
 
-    def is_aruco_centered(self):
+    def is_aruco_centered(self, deadzone: int):
         error_x = self.frame_x - self.center_x
         logger.debug(f"error_x: {error_x}")
         # con error_X positivo, il marker è a sinistra del centro, con error_X negativo, il marker è a destra del centro
-        if abs(error_x) > 20:
+        if abs(error_x) > deadzone:
             if error_x > 0:
                 # rotazione anti oraria
                 self.sm.motors.setDirectionAndSpeed(0, 0, -1)
@@ -66,19 +66,19 @@ class MovingState(BaseState):
             return False
         return True
 
-    def is_close_to_aruco(self):
-        if self.distance > 10:
+    def is_close_to_aruco(self, target_dist: int):
+        if self.distance > target_dist:
             self.sm.motors.setDirectionAndSpeed(0, 40, 0)
             self.updated = False
             return False
         return True
 
-    def is_parallel_to_aruco(self):
+    def is_parallel_to_aruco(self, target_pitch: int):
 
         # pitch maggiore = aruco rivolto a sinistra
         # pitch minore = aruco rivolto a destra
 
-        if abs(self.pitch) > 10:
+        if abs(self.pitch) > target_pitch:
             if self.pitch > 0:
                 self.sm.motors.setDirectionAndSpeed(-15, 0, 0)
             else:
@@ -100,16 +100,18 @@ class MovingState(BaseState):
             return None
 
         # per cambiare priorità delle azioni basta spostarle (es: voglio che prima sia parallelo e poi si avvicina, inverto is_close con is_parallel)
-        if not self.is_aruco_centered():
+        if not self.is_aruco_centered(20):
             return None
 
-        if not self.is_close_to_aruco():
+        if not self.is_close_to_aruco(20):
             return None
 
-        if not self.is_parallel_to_aruco():
+        if not self.is_parallel_to_aruco(10):
             return None
 
-        self.sm.motors.stop_motors()
+        if not self.is_close_to_aruco(8):
+            return None
+
         logger.error("DAJEEEEE è AL CENTRO e VICINO")
 
         from .exit_state import ExitState
