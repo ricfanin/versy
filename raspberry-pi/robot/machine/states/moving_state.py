@@ -60,7 +60,7 @@ class MovingState(BaseState):
                 # rotazione anti oraria
                 self.sm.motors.setDirectionAndSpeed(0, 0, -1)
             else:
-                # rotazione oraria e ritorno
+                # rotazione oraria
                 self.sm.motors.setDirectionAndSpeed(0, 0, 1)
             self.updated = False
             return False

@@ -1,6 +1,7 @@
 import time
 
 import numpy as np
+from numpy.typing import NDArray
 
 from ..utils.debug import get_logger
 
@@ -91,11 +92,9 @@ class Motors:
 
         return T_full
 
-    def __computeKiwiDrivePowers(self, vx, vy, vang=0):
-        v = np.array([vx, vy, vang])
-
-        potenze = self.kiwi_matrix @ v
+    def __compute_proportions(self, potenze: NDArray, min_motor_power: int):
         logger.debug(f"before {potenze}")
+
         max_power = max(abs(potenze))
         min_power = min(abs(potenze))
         signs = np.sign(potenze)
@@ -103,12 +102,20 @@ class Motors:
         potenze = abs(potenze)
 
         if max_power > 100:
-            mult = 75 / max_power
-            potenze = signs * (25 + potenze * mult) * zeros
-        elif min_power < 25:
-            potenze = signs * (25 + potenze * 0.75) * zeros
+            mult = (100 - min_motor_power) / max_power
+            potenze = signs * (min_motor_power + potenze * mult) * zeros
+        elif min_power < min_motor_power:
+            mult = (100 - min_motor_power) / 100
+            potenze = signs * (min_motor_power + potenze * mult) * zeros
 
         logger.debug(f"after {potenze}")
+        return potenze
+
+    def __computeKiwiDrivePowers(self, vx, vy, vang=0):
+        v = np.array([vx, vy, vang])
+
+        potenze = self.kiwi_matrix @ v
+        potenze = self.__compute_proportions(potenze, 25)
         return potenze
 
     def setDirectionAndSpeed(self, vx, vy, vang=0):
