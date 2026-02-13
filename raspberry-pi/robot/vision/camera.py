@@ -1,5 +1,5 @@
 from threading import Thread
-from typing import Optional, Tuple
+from typing import Optional
 
 import cv2
 
@@ -38,9 +38,6 @@ class Camera:
 
     def get_frame(self):
         return self.__frame
-
-    def frame_shape(self):
-        return self.__frame.shape
 
     def detect_aruco(self):
         frame = self.get_frame()

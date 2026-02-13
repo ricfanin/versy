@@ -8,20 +8,23 @@ if TYPE_CHECKING:
 class BaseState(ABC):
     """Classe astratta per tutti gli stati del robot"""
 
-    # @abstractmethod
-    # def __init__(self, state_machine: "StateMachine"): DA FARE
+    @abstractmethod
+    def __init__(self, state_machine: "StateMachine"):
+        """Inizializza lo stato con una reference alla state machine"""
+        self.sm = state_machine
+        pass
 
     @abstractmethod
-    def enter(self, state_machine: "StateMachine") -> None:
+    def enter(self) -> None:
         """Chiamata quando si entra nello stato"""
         pass
 
     @abstractmethod
-    def execute(self, state_machine: "StateMachine") -> Optional["BaseState"]:
+    def execute(self) -> Optional["BaseState"]:
         """Eseguita ogni ciclo. Ritorna nuovo stato o None"""
         pass
 
     @abstractmethod
-    def exit(self, state_machine: "StateMachine") -> None:
+    def exit(self) -> None:
         """Chiamata quando si esce dallo stato"""
         pass

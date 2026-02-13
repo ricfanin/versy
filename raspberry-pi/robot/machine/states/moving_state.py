@@ -1,10 +1,7 @@
-import time
-
 from ...state_machine import StateMachine
 from ...utils.debug import get_logger
 from ..base_state import BaseState
 
-# Initialize module logger
 logger = get_logger("states.moving")
 
 
@@ -14,18 +11,26 @@ class MovingState(BaseState):
     def __init__(self, state_machine: "StateMachine", marker):
         self.updated = False
         self.sm = state_machine
-        self.frame_x = self.sm.camera.get_frame().shape[1] // 2
-        self.frame_y = self.sm.camera.get_frame().shape[0] // 2
+
+        frame = self.sm.camera.get_frame()
+        if frame is not None:
+            self.frame_x = frame.shape[1] // 2
+            self.frame_y = frame.shape[0] // 2
+        else:
+            # dovrebbe essere la stessa cosa
+            self.frame_x = self.sm.camera.FRAME_WIDTH // 2
+            self.frame_y = self.sm.camera.FRAME_HEIGHT // 2
+
         self.marker = marker
-        self.distance = marker["distance"]
-        self.roll = marker["angles"][0]
-        self.pitch = marker["angles"][1]
-        self.yaw = marker["angles"][2]
-        self.center_x = marker["center"][0]
-        self.center_y = marker["center"][1]
+        self.distance = self.marker["distance"]
+        self.roll = self.marker["angles"][0]
+        self.pitch = self.marker["angles"][1]
+        self.yaw = self.marker["angles"][2]
+        self.center_x = self.marker["center"][0]
+        self.center_y = self.marker["center"][1]
         self.retries = 0
 
-    def enter(self, state_machine) -> None:
+    def enter(self) -> None:
         logger.info("Entering moving state")
         self.updated = True
         return None
@@ -75,25 +80,26 @@ class MovingState(BaseState):
 
         if abs(self.pitch) > 10:
             if self.pitch > 0:
-                self.sm.motors.setDirectionAndSpeed(-10, 0, 0)
+                self.sm.motors.setDirectionAndSpeed(-15, 0, 0)
             else:
-                self.sm.motors.setDirectionAndSpeed(10, 0, 0)
+                self.sm.motors.setDirectionAndSpeed(15, 0, 0)
             self.updated = False
             return False
         return True
 
-    def execute(self, state_machine):
+    def execute(self):
         logger.debug(f"Marker: {self.marker}")
         # marker:  {'id': 0, 'rvec': array([ x, y, z]), 'tvec': array([x ,  y,  z]), 'distance': 14.322984264396954, 'angles': (np.float64(x), np.float64(y), np.float64(z)), 'center': (x, y)}
         if not self.updated:
             self.update_data()
-            if self.retries > 10:
+            if self.retries > 100:  # numero di frame senza un aruco
                 from .scan_state import ScanState
 
                 logger.error("ARUCO LOST")
-                return ScanState()
+                return ScanState(self.sm)
             return None
 
+        # per cambiare priorità delle azioni basta spostarle (es: voglio che prima sia parallelo e poi si avvicina, inverto is_close con is_parallel)
         if not self.is_aruco_centered():
             return None
 
@@ -103,12 +109,14 @@ class MovingState(BaseState):
         if not self.is_parallel_to_aruco():
             return None
 
+        self.sm.motors.stop_motors()
         logger.error("DAJEEEEE è AL CENTRO e VICINO")
-        state_machine.stop()
-        self.updated = False
-        return None
 
-    def exit(self, state_machine) -> None:
+        from .exit_state import ExitState
+
+        return ExitState(self.sm)
+
+    def exit(self) -> None:
         logger.info("Exiting moving state")
-        state_machine.motors.stop_motors()
+        self.sm.motors.stop_motors()
         return None
