@@ -3,9 +3,9 @@ import time
 import numpy as np
 from numpy.typing import NDArray
 
-from ..utils.debug import get_logger
+# from ..utils.debug import get_logger
 
-logger = get_logger("motors")
+# logger = get_logger("motors")
 
 # Import condizionali
 try:
@@ -15,7 +15,7 @@ try:
 
     MOCK_MODE = False
 except ImportError:
-    logger.warning("Raspberry Pi libraries not found - using MOCK MODE")
+    # logger.warning("Raspberry Pi libraries not found - using MOCK MODE")
     from ..software_testing.mock_raspberry import SCL, SDA, i2c_device
     from ..software_testing.mock_raspberry import MockI2C as busio_I2C
 
@@ -37,8 +37,8 @@ class Motors:
         self.mspi2c = i2c_device.I2CDevice(i2c_bus, 0x10)
         self.kiwi_matrix = self.__compute_kiwi_matrix()
 
-        if MOCK_MODE:
-            logger.info("Motors initialized in MOCK MODE - no real hardware")
+        # if MOCK_MODE:
+            # logger.info("Motors initialized in MOCK MODE - no real hardware")
 
     def __send_motor_power(self, motor, power):
 
@@ -46,25 +46,25 @@ class Motors:
             power = 256 - abs(power)
 
         data = [motor, power]
-
+        # print(f"Sending data: {data}")
         try:
             self.mspi2c.write(bytes(data))
             if MOCK_MODE:
                 motor_names = {0: "M1", 2: "M2", 1: "M3"}
                 actual_power = power if power < 128 else -(256 - power)
-                logger.verbose(
-                    f"Motor {motor_names.get(motor, motor)}: power {actual_power}"
-                )
+                # logger.verbose(
+                #     f"Motor {motor_names.get(motor, motor)}: power {actual_power}"
+                # )
         except Exception as e:
-            logger.error(f"I2C communication error: {e}")
+            # logger.error(f"I2C communication error: {e}")
             time.sleep(0.01)
             self.mspi2c.write(bytes(data))
 
     def __set_powers(self, m1_power, m2_power, m3_power):
-        if MOCK_MODE:
-            logger.debug(
-                f"Setting motor powers - M1: {m1_power}, M2: {m2_power}, M3: {m3_power}"
-            )
+        # if MOCK_MODE:
+            # logger.debug(
+            #     f"Setting motor powers - M1: {m1_power}, M2: {m2_power}, M3: {m3_power}"
+            # )
         self.__send_motor_power(self.__M_1, m1_power)
         self.__send_motor_power(self.__M_2, m2_power)
         self.__send_motor_power(self.__M_3, m3_power)
@@ -93,7 +93,7 @@ class Motors:
         return T_full
 
     def __compute_proportions(self, potenze: NDArray, min_motor_power: int):
-        logger.debug(f"before {potenze}")
+        # logger.debug(f"before {potenze}")
 
         max_power = max(abs(potenze))
         min_power = min(abs(potenze))
@@ -108,14 +108,14 @@ class Motors:
             mult = (100 - min_motor_power) / 100
             potenze = signs * (min_motor_power + potenze * mult) * zeros
 
-        logger.debug(f"after {potenze}")
+        # logger.debug(f"after {potenze}")
         return potenze
 
     def __computeKiwiDrivePowers(self, vx, vy, vang=0):
         v = np.array([vx, vy, vang])
 
         potenze = self.kiwi_matrix @ v
-        potenze = self.__compute_proportions(potenze, 25)
+        potenze = self.__compute_proportions(potenze, 35)
         return potenze
 
     def setDirectionAndSpeed(self, vx, vy, vang=0):
@@ -132,10 +132,10 @@ class Motors:
         """Test method for InitState to verify motors functionality"""
         try:
             self.stop_motors()
-            logger.info("Motors test passed")
+            # logger.info("Motors test passed")
             return True
         except Exception as e:
-            logger.error(f"Motors test failed: {e}")
+            # logger.error(f"Motors test failed: {e}")
             return False
 
     def stop_motors(self):
@@ -145,8 +145,7 @@ class Motors:
 if __name__ == "__main__":
     motors = Motors()
     # motors.test_motors()
-    time.sleep(5)
-    motors.setDirectionAndSpeed(0, 0, -10)
+    motors.setDirectionAndSpeed(0, 0, 1)
     time.sleep(2)
 
     motors.stop_motors()

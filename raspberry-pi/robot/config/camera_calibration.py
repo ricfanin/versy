@@ -1,7 +1,13 @@
 import glob
 import os
 
+import sys
+
+sys.path.append("/usr/lib/python3/dist-packages")
+from typing import Optional, Tuple
+
 import cv2
+from picamera2 import Picamera2
 import numpy as np
 
 CHESSBOARD_SIZE = (9, 6)  # Numero di angoli INTERNI (colonne, righe)
@@ -20,11 +26,82 @@ def capture_calibration_images():
     print("- Premi ESC per uscire")
 
     img_counter = 0
-    cap = cv2.VideoCapture(0)
+
+
+
+    resolution: Tuple[int, int] = (320, 240)
+
+    brightness: Optional[float] = 0.1
+
+    hflip: bool = True
+
+    vflip: bool = True
+
+
+
+    cam = Picamera2()
+
+
+
+    full_fov_mode = None
+
+    for mode in cam.sensor_modes:
+
+        # Controlla se il crop_limits inizia da (0,0) - indica full FOV
+
+        if mode["crop_limits"][0] == 0 and mode["crop_limits"][1] == 0:
+
+            full_fov_mode = mode
+
+            break
+
+
+
+    config = cam.create_video_configuration(
+
+        main={"size": resolution, "format": "RGB888"},
+
+        sensor={
+
+            "output_size": full_fov_mode[
+
+                "size"
+
+            ],  # Forza il sensor mode con full FOV
+
+            "bit_depth": full_fov_mode["bit_depth"],
+
+        },
+
+    )
+
+
+
+    if hflip or vflip:
+
+        from libcamera import Transform
+
+
+
+        config["transform"] = Transform(hflip=int(hflip), vflip=int(vflip))
+
+
+
+    cam.configure(config)
+
+
+
+    if brightness is not None:
+
+        cam.set_controls({"Brightness": float(brightness)})
+
+
+
+    cam.start()
 
     while img_counter < NUM_IMAGES:
-        ret, frame = cap.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame = cam.capture_array()
+        gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         # Cerca gli angoli della scacchiera
         ret_chess, corners = cv2.findChessboardCorners(
             gray,
@@ -85,7 +162,7 @@ def capture_calibration_images():
             print("Uscita anticipata")
             break
 
-    cap.release()
+    cam.stop()
     cv2.destroyAllWindows()
     print(f"\n✓ Cattura completata: {img_counter} immagini salvate")
     return True

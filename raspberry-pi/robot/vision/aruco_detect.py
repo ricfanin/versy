@@ -28,7 +28,9 @@ class ArucoDetector:
     def detect(self, frame, show=True):
         """restituisce array di markers rilevati fonendo:
         id, rvc, tvec, distance, roll, pitch, yaw, center"""
+        cv2.imshow("start_frame.jpg", frame)
         pframe = self.__preprocess(frame)
+        cv2.imshow("preprocessed_frame.jpg", pframe)
         corners, ids, _ = self.detector.detectMarkers(pframe)
         results = []
         if ids is not None:
@@ -57,6 +59,7 @@ class ArucoDetector:
 
     def __preprocess(self, frame):
         """Converte in grigio e applica blur"""
+        # frame_flipped = cv2.flip(frame, 0)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gaus = cv2.GaussianBlur(gray, (3, 3), 0)
         return gaus
@@ -70,7 +73,7 @@ class ArucoDetector:
             "id": int(m_id),
             "rvec": rvec,
             "tvec": tvec,
-            "distance": float(distance)*100,
+            "distance": float(distance) * 100,
             "angles": (roll, pitch, yaw),
             "center": (int(center[0]), frame_height - int(center[1])),
         }
@@ -97,7 +100,7 @@ class ArucoDetector:
 
         cv2.putText(
             frame,
-            f"ID:{m_id} Dist:{dist :.1f}cm",
+            f"ID:{m_id} Dist:{dist:.1f}cm",
             top_left,
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
@@ -117,7 +120,9 @@ class ArucoDetector:
         height = frame.shape[0]
         target_x = width // 2
         target_y = height // 2
-        cv2.circle(frame, (target_x, target_y), radius=2, color=(255,0,0), thickness=-1)
+        cv2.circle(
+            frame, (target_x, target_y), radius=2, color=(255, 0, 0), thickness=-1
+        )
 
     def __rotation_vector_to_euler_angles(self, rvec):
         """Converte il vettore di rotazione in angoli espressi in gradi"""

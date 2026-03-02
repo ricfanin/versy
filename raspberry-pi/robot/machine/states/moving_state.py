@@ -1,6 +1,7 @@
 from ...state_machine import StateMachine
 from ...utils.debug import get_logger
 from ..base_state import BaseState
+import time
 
 logger = get_logger("states.moving")
 
@@ -29,6 +30,7 @@ class MovingState(BaseState):
         self.center_x = self.marker["center"][0]
         self.center_y = self.marker["center"][1]
         self.retries = 0
+        self.is_centered = False
 
     def enter(self) -> None:
         logger.info("Entering moving state")
@@ -50,6 +52,12 @@ class MovingState(BaseState):
         else:
             self.sm.motors.stop_motors()
             self.retries += 1
+    
+    def set_is_centered_flag(self):
+        error_x = self.frame_x - self.center_x
+        if abs(error_x) >= 50: # pixel di deadzone per considerare l'aruco centrato
+            logger.warning(f"Marker not centered: error_x={error_x}")
+            self.is_centered = False
 
     def is_aruco_centered(self, deadzone: int):
         error_x = self.frame_x - self.center_x
@@ -64,6 +72,7 @@ class MovingState(BaseState):
                 self.sm.motors.setDirectionAndSpeed(0, 0, 1)
             self.updated = False
             return False
+        self.is_centered = True
         return True
 
     def is_close_to_aruco(self, target_dist: int):
@@ -80,9 +89,9 @@ class MovingState(BaseState):
 
         if abs(self.pitch) > target_pitch:
             if self.pitch > 0:
-                self.sm.motors.setDirectionAndSpeed(-15, 0, 0)
+                self.sm.motors.setDirectionAndSpeed(-20, 0, 0)
             else:
-                self.sm.motors.setDirectionAndSpeed(15, 0, 0)
+                self.sm.motors.setDirectionAndSpeed(20, 0, 0)
             self.updated = False
             return False
         return True
@@ -98,21 +107,27 @@ class MovingState(BaseState):
                 logger.error("ARUCO LOST")
                 return ScanState(self.sm)
             return None
+        
+        self.set_is_centered_flag()
 
         # per cambiare priorità delle azioni basta spostarle (es: voglio che prima sia parallelo e poi si avvicina, inverto is_close con is_parallel)
-        if not self.is_aruco_centered(20):
+        if not self.is_centered:
+            if not self.is_aruco_centered(15): #pixel di deadzone per considerare l'aruco centrato
+                return None
+
+        if not self.is_close_to_aruco(15): # distanza in cm per considerare l'aruco abbastanza vicino
             return None
 
-        if not self.is_close_to_aruco(20):
+        if not self.is_parallel_to_aruco(6): # angolo di pitch in gradi per considerare l'aruco abbastanza parallelo
             return None
 
-        if not self.is_parallel_to_aruco(10):
+        if not self.is_close_to_aruco(12):
             return None
-
-        if not self.is_close_to_aruco(8):
-            return None
+        
 
         logger.error("DAJEEEEE è AL CENTRO e VICINO")
+        self.sm.motors.setDirectionAndSpeed(0, 50, 0)
+        time.sleep(1.3)
 
         from .exit_state import ExitState
 

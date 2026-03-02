@@ -1,11 +1,7 @@
-import sys
-
-sys.path.append("/usr/lib/python3/dist-packages")
 from threading import Thread
-from typing import Optional, Tuple
+from typing import Optional
 
 import cv2
-from picamera2 import Picamera2
 
 from ..utils.debug import get_logger
 from .aruco_detect import ArucoDetector
@@ -19,47 +15,15 @@ class Camera:
     FRAME_HEIGHT = 240
     FPS = 30
 
-    def __init__(
-        self,
-        resolution: Tuple[int, int] = (320, 240),
-        brightness: Optional[float] = 0.0,
-        hflip: bool = True,
-        vflip: bool = True,
-    ):
+    def __init__(self, camera_index=0):
+        self.cap = cv2.VideoCapture(camera_index)
         self.aruco_detector = ArucoDetector()
-        self.cam = Picamera2()
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.FRAME_WIDTH)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.FRAME_HEIGHT)
+        self.cap.set(cv2.CAP_PROP_FPS, self.FPS)
         self.__stopped = False
         self.__frame = None
         self.__thread: Optional[Thread] = None
-
-        full_fov_mode = None
-        for mode in self.cam.sensor_modes:
-            # Controlla se il crop_limits inizia da (0,0) - indica full FOV
-            if mode["crop_limits"][0] == 0 and mode["crop_limits"][1] == 0:
-                full_fov_mode = mode
-                break
-
-        config = self.cam.create_video_configuration(
-            main={"size": resolution, "format": "RGB888"},
-            sensor={
-                "output_size": full_fov_mode[
-                    "size"
-                ],  # Forza il sensor mode con full FOV
-                "bit_depth": full_fov_mode["bit_depth"],
-            },
-        )
-
-        if hflip or vflip:
-            from libcamera import Transform
-
-            config["transform"] = Transform(hflip=int(hflip), vflip=int(vflip))
-
-        self.cam.configure(config)
-
-        if brightness is not None:
-            self.cam.set_controls({"Brightness": float(brightness)})
-
-        self.cam.start()
 
     def start(self):
         self.__thread = Thread(target=self.update, daemon=True)
@@ -69,7 +33,7 @@ class Camera:
 
     def update(self):
         while not self.__stopped:
-            frame = self.cam.capture_array()
+            ret, frame = self.cap.read()
             self.__frame = frame
 
     def get_frame(self):
@@ -86,8 +50,8 @@ class Camera:
         """Test method for InitState to verify camera functionality"""
         try:
             # Try to capture a frame
-            frame = self.cam.capture_array()
-            if frame is not None:
+            ret, frame = self.cap.read()
+            if ret and frame is not None:
                 logger.info("Camera test passed")
                 return True
             else:
@@ -103,6 +67,6 @@ class Camera:
         self.__stopped = True
         if self.__thread and self.__thread.is_alive():
             self.__thread.join(timeout=1.0)
-        self.cam.stop()
+        self.cap.release()
         cv2.destroyAllWindows()
         logger.info("Camera stopped successfully")
