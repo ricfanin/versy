@@ -2,7 +2,7 @@ from ...utils.debug import get_logger
 from ..base_state import BaseState
 
 # Initialize module logger
-logger = get_logger("states.init")
+logger = get_logger("states.exit")
 
 
 class ExitState(BaseState):

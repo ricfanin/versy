@@ -28,9 +28,7 @@ class ArucoDetector:
     def detect(self, frame, show=True):
         """restituisce array di markers rilevati fonendo:
         id, rvc, tvec, distance, roll, pitch, yaw, center"""
-        cv2.imshow("start_frame.jpg", frame)
         pframe = self.__preprocess(frame)
-        cv2.imshow("preprocessed_frame.jpg", pframe)
         corners, ids, _ = self.detector.detectMarkers(pframe)
         results = []
         if ids is not None:

@@ -12,6 +12,7 @@ class MovingState(BaseState):
     def __init__(self, state_machine: "StateMachine", marker: dict):
         self.updated = False
         self.sm = state_machine
+        self.initial_marker = marker
 
         frame = self.sm.camera.get_frame()
         if frame is not None:
@@ -118,20 +119,23 @@ class MovingState(BaseState):
         if not self.is_close_to_aruco(15): # distanza in cm per considerare l'aruco abbastanza vicino
             return None
 
-        if not self.is_parallel_to_aruco(6): # angolo di pitch in gradi per considerare l'aruco abbastanza parallelo
+        if not self.is_parallel_to_aruco(5): # angolo di pitch in gradi per considerare l'aruco abbastanza parallelo
             return None
 
         if not self.is_close_to_aruco(12):
             return None
         
 
-        logger.error("DAJEEEEE è AL CENTRO e VICINO")
+        logger.error("ARRIVATO AL BICCHIERE")
         self.sm.motors.setDirectionAndSpeed(0, 50, 0)
-        time.sleep(1.3)
+        time.sleep(0.8)
+        self.sm.motors.stop_motors()
+        logger.error("STO VERSANDO LO SDROGO ....")
+        time.sleep(3)
 
-        from .exit_state import ExitState
+        from .retreat_state import RetreatState
 
-        return ExitState(self.sm)
+        return RetreatState(self.sm, self.initial_marker)
 
     def exit(self) -> None:
         logger.info("Exiting moving state")

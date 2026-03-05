@@ -15,7 +15,7 @@ class ScanState(BaseState):
 
     def execute(self):
         res = self.sm.camera.detect_aruco()
-        if res != []:
+        if res != [] and res[0]["id"] == 0: # seleziono solo il marker con id 0
             self.sm.motors.stop_motors()
             logger.debug(f"ArUco markers detected: {len(res)} markers found")
             from .moving_state import MovingState
