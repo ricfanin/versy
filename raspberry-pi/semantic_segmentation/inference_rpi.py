@@ -4,6 +4,7 @@ Semantic segmentation in tempo reale da webcam USB.
 Uso: python3 inference_rpi.py [--model deeplabv3|segformer] [--camera 0]
 """
 import argparse
+import os
 import time
 
 import cv2
@@ -91,7 +92,11 @@ def main():
     parser.add_argument("--camera", type=int, default=0)
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=480)
+    parser.add_argument("--save-every", type=int, default=0, help="Salva frame ogni N (0=disabilitato)")
     args = parser.parse_args()
+
+    if args.save_every:
+        os.makedirs("output", exist_ok=True)
 
     print(f"Carico {args.model}...")
     interpreter, cfg = load_model(args.model)
@@ -105,49 +110,42 @@ def main():
         print("Errore: impossibile aprire la camera")
         return
 
-    print("Premi 'q' per uscire, 's' per salvare frame")
+    print("Ctrl+C per uscire")
+    print(f"{'Frame':>6} | {'FPS':>5} | {'Tavolo %':>8}")
+    print("-" * 30)
 
-    fps_avg = []
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    frame_count = 0
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        t0 = time.perf_counter()
+            t0 = time.perf_counter()
 
-        input_data = preprocess(frame, cfg)
-        output = inference(interpreter, cfg, input_data)
-        table_mask = get_table_mask(output, (frame.shape[1], frame.shape[0]), args.model, cfg)
+            input_data = preprocess(frame, cfg)
+            output = inference(interpreter, cfg, input_data)
+            table_mask = get_table_mask(output, (frame.shape[1], frame.shape[0]), args.model, cfg)
 
-        elapsed = time.perf_counter() - t0
-        fps = 1.0 / elapsed
-        fps_avg.append(fps)
-        if len(fps_avg) > 30:
-            fps_avg.pop(0)
+            elapsed = time.perf_counter() - t0
+            fps = 1.0 / elapsed
+            table_pct = np.sum(table_mask > 0) / table_mask.size * 100
+            frame_count += 1
 
-        # Overlay verde sul tavolo
-        overlay = frame.copy()
-        overlay[table_mask > 0] = [0, 255, 0]
-        result = cv2.addWeighted(frame, 0.6, overlay, 0.4, 0)
+            print(f"\r{frame_count:>6} | {fps:>5.1f} | {table_pct:>7.1f}%", end="", flush=True)
 
-        # Info
-        cv2.putText(result, f"FPS: {np.mean(fps_avg):.1f}", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        cv2.putText(result, f"Model: {args.model}", (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            # Salva ogni N frame per debug
+            if args.save_every and frame_count % args.save_every == 0:
+                overlay = frame.copy()
+                overlay[table_mask > 0] = [0, 255, 0]
+                result = cv2.addWeighted(frame, 0.6, overlay, 0.4, 0)
+                cv2.imwrite(f"output/frame_{frame_count:05d}.png", result)
+                cv2.imwrite(f"output/mask_{frame_count:05d}.png", table_mask)
 
-        cv2.imshow("Segmentation", result)
-
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord("q"):
-            break
-        elif key == ord("s"):
-            cv2.imwrite("frame.png", frame)
-            cv2.imwrite("mask.png", table_mask)
-            print("Salvato: frame.png, mask.png")
+    except KeyboardInterrupt:
+        print("\nStop")
 
     cap.release()
-    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
