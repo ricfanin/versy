@@ -38,6 +38,11 @@ def load_model(name):
     cfg = MODELS[name]
     interpreter = Interpreter(model_path=cfg["path"])
     interpreter.allocate_tensors()
+    inp = interpreter.get_input_details()[0]
+    out = interpreter.get_output_details()[0]
+    cfg["input_dtype"] = inp["dtype"]
+    cfg["input_index"] = inp["index"]
+    cfg["output_index"] = out["index"]
     return interpreter, cfg
 
 
@@ -49,18 +54,16 @@ def preprocess(frame, cfg):
         img = img.astype(np.float32) / 255.0
         img = (img - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
         img = np.transpose(img, (2, 0, 1))
-        return np.expand_dims(img, 0).astype(np.float32)
+    else:
+        img = img.astype(np.float32) / 127.5 - 1.0
 
-    return np.expand_dims(img, 0).astype(np.uint8)
+    return np.expand_dims(img, 0).astype(cfg["input_dtype"])
 
 
-def inference(interpreter, input_data):
-    inp = interpreter.get_input_details()[0]
-    out = interpreter.get_output_details()[0]
-
-    interpreter.set_tensor(inp["index"], input_data)
+def inference(interpreter, cfg, input_data):
+    interpreter.set_tensor(cfg["input_index"], input_data)
     interpreter.invoke()
-    return interpreter.get_tensor(out["index"])
+    return interpreter.get_tensor(cfg["output_index"])
 
 
 def get_table_mask(output, size, model_name, cfg):
@@ -113,7 +116,7 @@ def main():
         t0 = time.perf_counter()
 
         input_data = preprocess(frame, cfg)
-        output = inference(interpreter, input_data)
+        output = inference(interpreter, cfg, input_data)
         table_mask = get_table_mask(output, (frame.shape[1], frame.shape[0]), args.model, cfg)
 
         elapsed = time.perf_counter() - t0
