@@ -24,19 +24,29 @@ MODELS = {
         "size": (257, 257),
         "table_class": 11,
         "normalize": False,
+        "runtime": "tflite",
     },
     "segformer": {
-        "path": "models/segformer_ade20k.tflite",
+        "path": "models/segformer.onnx",
         "size": (512, 512),
         "table_class": [15, 33],
         "floor_class": 3,
         "normalize": True,
+        "runtime": "onnx",
     },
 }
 
 
 def load_model(name):
     cfg = MODELS[name]
+
+    if cfg["runtime"] == "onnx":
+        import onnxruntime as ort
+        session = ort.InferenceSession(cfg["path"], providers=["CPUExecutionProvider"])
+        cfg["input_name"] = session.get_inputs()[0].name
+        cfg["input_dtype"] = np.float32
+        return session, cfg
+
     interpreter = Interpreter(model_path=cfg["path"])
     interpreter.allocate_tensors()
     inp = interpreter.get_input_details()[0]
@@ -61,15 +71,21 @@ def preprocess(frame, cfg):
     return np.expand_dims(img, 0).astype(cfg["input_dtype"])
 
 
-def inference(interpreter, cfg, input_data):
-    interpreter.set_tensor(cfg["input_index"], input_data)
-    interpreter.invoke()
-    return interpreter.get_tensor(cfg["output_index"])
+def inference(model, cfg, input_data):
+    if cfg["runtime"] == "onnx":
+        outputs = model.run(None, {cfg["input_name"]: input_data})
+        return outputs[0]
+
+    model.set_tensor(cfg["input_index"], input_data)
+    model.invoke()
+    return model.get_tensor(cfg["output_index"])
 
 
 def get_table_mask(output, size, model_name, cfg):
     if model_name == "segformer":
-        mask = np.argmax(output[0], axis=0)
+        # ONNX output: [1, 150, H, W]
+        data = output[0] if output.ndim == 4 else output
+        mask = np.argmax(data, axis=1)[0]  # -> [H, W]
     else:
         mask = np.argmax(output[0], axis=-1)
 
@@ -110,42 +126,47 @@ def main():
         print("Errore: impossibile aprire la camera")
         return
 
-    print("Ctrl+C per uscire")
-    print(f"{'Frame':>6} | {'FPS':>5} | {'Tavolo %':>8}")
-    print("-" * 30)
+    print("Premi 'q' per uscire, 's' per salvare frame")
 
-    frame_count = 0
-    try:
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
+    fps_avg = []
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-            t0 = time.perf_counter()
+        t0 = time.perf_counter()
 
-            input_data = preprocess(frame, cfg)
-            output = inference(interpreter, cfg, input_data)
-            table_mask = get_table_mask(output, (frame.shape[1], frame.shape[0]), args.model, cfg)
+        input_data = preprocess(frame, cfg)
+        output = inference(interpreter, cfg, input_data)
+        table_mask = get_table_mask(output, (frame.shape[1], frame.shape[0]), args.model, cfg)
 
-            elapsed = time.perf_counter() - t0
-            fps = 1.0 / elapsed
-            table_pct = np.sum(table_mask > 0) / table_mask.size * 100
-            frame_count += 1
+        elapsed = time.perf_counter() - t0
+        fps = 1.0 / elapsed
+        fps_avg.append(fps)
+        if len(fps_avg) > 30:
+            fps_avg.pop(0)
 
-            print(f"\r{frame_count:>6} | {fps:>5.1f} | {table_pct:>7.1f}%", end="", flush=True)
+        # Overlay verde sul tavolo
+        overlay = frame.copy()
+        overlay[table_mask > 0] = [0, 255, 0]
+        result = cv2.addWeighted(frame, 0.6, overlay, 0.4, 0)
 
-            # Salva ogni N frame per debug
-            if args.save_every and frame_count % args.save_every == 0:
-                overlay = frame.copy()
-                overlay[table_mask > 0] = [0, 255, 0]
-                result = cv2.addWeighted(frame, 0.6, overlay, 0.4, 0)
-                cv2.imwrite(f"output/frame_{frame_count:05d}.png", result)
-                cv2.imwrite(f"output/mask_{frame_count:05d}.png", table_mask)
+        table_pct = np.sum(table_mask > 0) / table_mask.size * 100
+        cv2.putText(result, f"FPS: {np.mean(fps_avg):.1f} | Tavolo: {table_pct:.1f}%", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
-    except KeyboardInterrupt:
-        print("\nStop")
+        cv2.imshow("Segmentation", result)
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
+            break
+        elif key == ord("s"):
+            cv2.imwrite("frame.png", frame)
+            cv2.imwrite("mask.png", table_mask)
+            print("Salvato: frame.png, mask.png")
 
     cap.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
