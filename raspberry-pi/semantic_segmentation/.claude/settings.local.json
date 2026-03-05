@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(ls:*)",
+      "Bash(onnx2tf -i models/segformer.onnx -o models/segformer_tf -coion -cotof --non_verbose 2>&1 | tail -10)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "wpf-mcp"
+  ]
+}

@@ -25,12 +25,21 @@ MODELS = {
         "normalize": False,
         "runtime": "tflite",
     },
-    "segformer": {
-        "path": "models/segformer.onnx",
+    "segformer256": {
+        "path": "models/segformer_256.onnx",
         "table_class": [15, 33],
         "floor_class": 3,
         "normalize": True,
         "runtime": "onnx",
+        "fixed_size": (256, 256),
+    },
+    "segformer128": {
+        "path": "models/segformer_128.onnx",
+        "table_class": [15, 33],
+        "floor_class": 3,
+        "normalize": True,
+        "runtime": "onnx",
+        "fixed_size": (128, 128),
     },
 }
 
@@ -64,7 +73,10 @@ class CameraThread:
 
 def load_model(name, res):
     cfg = MODELS[name].copy()
-    cfg["size"] = (res, res)
+    if "fixed_size" in cfg:
+        cfg["size"] = cfg["fixed_size"]
+    else:
+        cfg["size"] = (res, res)
 
     if cfg["runtime"] == "onnx":
         import onnxruntime as ort
@@ -110,7 +122,7 @@ def inference(model, cfg, input_data):
 
 
 def get_table_mask(output, size, model_name, cfg):
-    if model_name == "segformer":
+    if cfg["runtime"] == "onnx":
         data = output[0] if output.ndim == 4 else output
         mask = np.argmax(data, axis=1)[0]
     else:
