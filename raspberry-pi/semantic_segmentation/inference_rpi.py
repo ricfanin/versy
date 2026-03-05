@@ -10,9 +10,12 @@ import cv2
 import numpy as np
 
 try:
-    from tflite_runtime.interpreter import Interpreter
+    from ai_edge_litert.interpreter import Interpreter
 except ImportError:
-    from tensorflow.lite import Interpreter
+    try:
+        from tflite_runtime.interpreter import Interpreter
+    except ImportError:
+        from tensorflow.lite import Interpreter
 
 MODELS = {
     "deeplabv3": {
