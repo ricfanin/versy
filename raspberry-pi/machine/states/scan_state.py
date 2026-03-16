@@ -1,5 +1,5 @@
-from ...utils.debug import get_logger
-from ..base_state import BaseState
+from utils.debug import get_logger
+from machine.base_state import BaseState
 
 logger = get_logger("states.scan")
 
@@ -14,9 +14,10 @@ class ScanState(BaseState):
         return None
 
     def execute(self):
-        res = self.sm.camera.detect_aruco()
+        frame = self.sm.robot.camera.get_frame()
+        res = self.sm.robot.aruco_detector.detect(frame) if frame is not None else []
         if res != [] and res[0]["id"] == 0: # seleziono solo il marker con id 0
-            self.sm.motors.stop_motors()
+            self.sm.robot.motors.stop_motors()
             logger.debug(f"ArUco markers detected: {len(res)} markers found")
             from .moving_state import MovingState
 
@@ -26,5 +27,5 @@ class ScanState(BaseState):
 
     def exit(self):
         logger.info("Exiting scan state")
-        self.sm.motors.stop_motors()
+        self.sm.robot.motors.stop_motors()
         return None

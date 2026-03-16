@@ -1,5 +1,5 @@
-from ...utils.debug import get_logger
-from ..base_state import BaseState
+from utils.debug import get_logger
+from machine.base_state import BaseState
 
 # Initialize module logger
 logger = get_logger("states.retreat")

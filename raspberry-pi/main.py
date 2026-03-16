@@ -1,7 +1,7 @@
 import time
 
-from robot.state_machine import StateMachine
-from robot.utils.debug import get_logger
+from state_machine import StateMachine
+from utils.debug import get_logger
 
 logger = get_logger("main")
 

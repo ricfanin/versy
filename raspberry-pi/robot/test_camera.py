@@ -1,7 +1,7 @@
 import sys
 
 
-from .aruco_detect import ArucoDetector
+from vision.aruco_detect import ArucoDetector
 
 sys.path.append("/usr/lib/python3/dist-packages")
 

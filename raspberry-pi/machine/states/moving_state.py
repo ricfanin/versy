@@ -1,6 +1,6 @@
-from ...state_machine import StateMachine
-from ...utils.debug import get_logger
-from ..base_state import BaseState
+from state_machine import StateMachine
+from utils.debug import get_logger
+from machine.base_state import BaseState
 import time
 
 logger = get_logger("states.moving")
@@ -14,14 +14,8 @@ class MovingState(BaseState):
         self.sm = state_machine
         self.initial_marker = marker
 
-        frame = self.sm.camera.get_frame()
-        if frame is not None:
-            self.frame_x = frame.shape[1] // 2
-            self.frame_y = frame.shape[0] // 2
-        else:
-            # dovrebbe essere la stessa cosa
-            self.frame_x = self.sm.camera.FRAME_WIDTH // 2
-            self.frame_y = self.sm.camera.FRAME_HEIGHT // 2
+        self.frame_x = self.sm.robot.FRAME_WIDTH // 2
+        self.frame_y = self.sm.robot.FRAME_HEIGHT // 2
 
         self.marker = marker
         self.distance = self.marker["distance"]
@@ -39,7 +33,8 @@ class MovingState(BaseState):
         return None
 
     def update_data(self):
-        res = self.sm.camera.detect_aruco()
+        frame = self.sm.robot.camera.get_frame()
+        res = self.sm.robot.aruco_detector.detect(frame) if frame is not None else []
         if res != []:
             self.marker = res[0]
             self.distance = self.marker["distance"]
@@ -51,7 +46,7 @@ class MovingState(BaseState):
             self.updated = True
             self.retries = 0
         else:
-            self.sm.motors.stop_motors()
+            self.sm.robot.motors.stop_motors()
             self.retries += 1
     
     def set_is_centered_flag(self):
@@ -67,10 +62,10 @@ class MovingState(BaseState):
         if abs(error_x) > deadzone:
             if error_x > 0:
                 # rotazione anti oraria
-                self.sm.motors.setDirectionAndSpeed(0, 0, -1)
+                self.sm.robot.motors.setDirectionAndSpeed(0, 0, -1)
             else:
                 # rotazione oraria
-                self.sm.motors.setDirectionAndSpeed(0, 0, 1)
+                self.sm.robot.motors.setDirectionAndSpeed(0, 0, 1)
             self.updated = False
             return False
         self.is_centered = True
@@ -78,7 +73,7 @@ class MovingState(BaseState):
 
     def is_close_to_aruco(self, target_dist: int):
         if self.distance > target_dist:
-            self.sm.motors.setDirectionAndSpeed(0, 40, 0)
+            self.sm.robot.motors.setDirectionAndSpeed(0, 40, 0)
             self.updated = False
             return False
         return True
@@ -90,9 +85,9 @@ class MovingState(BaseState):
 
         if abs(self.pitch) > target_pitch:
             if self.pitch > 0:
-                self.sm.motors.setDirectionAndSpeed(-20, 0, 0)
+                self.sm.robot.motors.setDirectionAndSpeed(-20, 0, 0)
             else:
-                self.sm.motors.setDirectionAndSpeed(20, 0, 0)
+                self.sm.robot.motors.setDirectionAndSpeed(20, 0, 0)
             self.updated = False
             return False
         return True
@@ -127,9 +122,9 @@ class MovingState(BaseState):
         
 
         logger.error("ARRIVATO AL BICCHIERE")
-        self.sm.motors.setDirectionAndSpeed(0, 50, 0)
+        self.sm.robot.motors.setDirectionAndSpeed(0, 50, 0)
         time.sleep(0.8)
-        self.sm.motors.stop_motors()
+        self.sm.robot.motors.stop_motors()
         logger.error("STO VERSANDO LO SDROGO ....")
         time.sleep(3)
 
@@ -139,5 +134,5 @@ class MovingState(BaseState):
 
     def exit(self) -> None:
         logger.info("Exiting moving state")
-        self.sm.motors.stop_motors()
+        self.sm.robot.motors.stop_motors()
         return None

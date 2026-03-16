@@ -16,8 +16,8 @@ try:
     MOCK_MODE = False
 except ImportError:
     # logger.warning("Raspberry Pi libraries not found - using MOCK MODE")
-    from ..software_testing.mock_raspberry import SCL, SDA, i2c_device
-    from ..software_testing.mock_raspberry import MockI2C as busio_I2C
+    from software_testing.mock_raspberry import SCL, SDA, i2c_device
+    from software_testing.mock_raspberry import MockI2C as busio_I2C
 
     MOCK_MODE = True
 

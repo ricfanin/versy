@@ -4,7 +4,7 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 
-from ..utils.debug import get_logger
+from utils.debug import get_logger
 
 # Initialize module logger
 logger = get_logger("aruco_detect")

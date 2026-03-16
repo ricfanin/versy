@@ -7,8 +7,7 @@ from typing import Optional, Tuple
 import cv2
 from picamera2 import Picamera2
 
-from ..utils.debug import get_logger
-from .aruco_detect import ArucoDetector
+from utils.debug import get_logger
 
 # Initialize module logger
 logger = get_logger("vision.camera")
@@ -26,7 +25,6 @@ class Camera:
         hflip: bool = True,
         vflip: bool = True,
     ):
-        self.aruco_detector = ArucoDetector()
         self.cam = Picamera2()
         self.__stopped = False
         self.__frame = None
@@ -74,13 +72,6 @@ class Camera:
 
     def get_frame(self):
         return self.__frame
-
-    def detect_aruco(self):
-        frame = self.get_frame()
-        res = []
-        if frame is not None:
-            res = self.aruco_detector.detect(frame)
-        return res
 
     def test_camera(self) -> bool:
         """Test method for InitState to verify camera functionality"""

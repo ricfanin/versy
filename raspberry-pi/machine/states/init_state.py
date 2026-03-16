@@ -1,5 +1,5 @@
-from ...utils.debug import get_logger
-from ..base_state import BaseState
+from utils.debug import get_logger
+from machine.base_state import BaseState
 
 logger = get_logger("states.init")
 
@@ -16,10 +16,10 @@ class InitState(BaseState):
 
     def execute(self):
         logger.info("Executing initialization: testing components")
-        if not self.sm.camera.test_camera():
+        if not self.sm.robot.camera.test_camera():
             logger.error("Camera test failed, retrying")
             return None
-        if not self.sm.motors.test_motors():
+        if not self.sm.robot.motors.test_motors():
             logger.error("Motors test failed, retrying")
             return None
         logger.info("Initialization complete - camera and motors OK")
@@ -29,5 +29,5 @@ class InitState(BaseState):
 
     def exit(self):
         logger.info("Exiting initialization state")
-        self.sm.camera.start()
+        self.sm.robot.camera.start()
         return None

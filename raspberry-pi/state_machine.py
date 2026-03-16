@@ -1,16 +1,14 @@
-from .machine.base_state import BaseState
-from .machine.states.init_state import InitState
-from .motors.motors import Motors
-from .utils.debug import get_logger
-from .vision.camera import Camera
+from machine.base_state import BaseState
+from machine.states.init_state import InitState
+from robot.robot import Robot
+from utils.debug import get_logger
 
 logger = get_logger("state_machine")
 
 
 class StateMachine:
     def __init__(self):
-        self.motors = Motors()
-        self.camera = Camera()
+        self.robot = Robot()
 
         # State machine properties
         self.current_state: BaseState = InitState(self)
@@ -53,5 +51,5 @@ class StateMachine:
             logger.info("Stopping state machine")
             self.running = False
             self.current_state.exit()
-            self.camera.stop()
+            self.robot.stop()
             logger.info("State machine stopped successfully")

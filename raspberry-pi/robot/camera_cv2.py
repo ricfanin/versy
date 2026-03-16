@@ -3,8 +3,7 @@ from typing import Optional
 
 import cv2
 
-from ..utils.debug import get_logger
-from .aruco_detect import ArucoDetector
+from utils.debug import get_logger
 
 # Initialize module logger
 logger = get_logger("vision.camera")
@@ -17,7 +16,6 @@ class Camera:
 
     def __init__(self, camera_index=0):
         self.cap = cv2.VideoCapture(camera_index)
-        self.aruco_detector = ArucoDetector()
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.FRAME_WIDTH)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.FRAME_HEIGHT)
         self.cap.set(cv2.CAP_PROP_FPS, self.FPS)
@@ -38,13 +36,6 @@ class Camera:
 
     def get_frame(self):
         return self.__frame
-
-    def detect_aruco(self):
-        frame = self.get_frame()
-        res = []
-        if frame is not None:
-            res = self.aruco_detector.detect(frame)
-        return res
 
     def test_camera(self) -> bool:
         """Test method for InitState to verify camera functionality"""

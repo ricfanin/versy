@@ -29,7 +29,7 @@ class DebugLogger:
 
     def _load_config(self):
         """Load global log level from first line of .env file"""
-        env_file = Path(__file__).parent.parent.parent / ".env"
+        env_file = Path(__file__).parent.parent / ".env"
         if env_file.exists():
             with open(env_file, "r") as f:
                 first_line = f.readline().strip()
