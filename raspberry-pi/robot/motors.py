@@ -29,6 +29,7 @@ class Motors:
     __M_1 = 0
     __M_2 = 2
     __M_3 = 1
+    __M_POMPA = 3
     __K_ROT = 1
     __ANGOLO_OFFSET_CAMERA_GRADI = 0  # altrimenti drifta in basso a destra
 
@@ -69,6 +70,9 @@ class Motors:
         self.__send_motor_power(self.__M_2, m2_power)
         self.__send_motor_power(self.__M_3, m3_power)
 
+    def set_pompa_power(self, power):
+        self.__send_motor_power(self.__M_POMPA, power)
+        
     def __compute_kiwi_matrix(self):
         """
         Restituisce la matrice T'' = [ T*R | k ] per un kiwi drive.
@@ -144,19 +148,11 @@ class Motors:
 
 if __name__ == "__main__":
     motors = Motors()
-    # motors.test_motors()
-    motors.setDirectionAndSpeed(0, 0, 1)
-    time.sleep(2)
+    motors.set_pompa_power(50)
 
-    motors.stop_motors()
-    # motors.set_powers(80, 0, 0)
-    # time.sleep(2)
-    # motors.set_powers(0, 80, 0)
-    # time.sleep(2)
-    # motors.set_powers(0, 0, 80)
-    # time.sleep(2)
-    # motors.set_powers(0, 0, 0)
+
 
 # m1 -> 60
 # m2 -> 40
 # m3 -> 60
+# cosa significa?
