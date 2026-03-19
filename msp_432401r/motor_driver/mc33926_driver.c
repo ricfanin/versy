@@ -5,7 +5,7 @@
  *      Author: daniele
  */
 #include "mc33926_driver.h"
-#include <ti/devices/msp432p4xx/driverlib/driverlib.h>
+
 
 /*Funzioni private*/
 static void initGPIO(void);
@@ -47,6 +47,22 @@ static void initGPIO(void){
     M3_PWM_PORT->SEL0 |= M3_PWM_PIN;
     M3_PWM_PORT->SEL1 &= ~M3_PWM_PIN;
     M3_PWM_PORT->DIR |= M3_PWM_PIN;
+
+    /* Motor 4 (pompa) - GPIO puri, no funzione timer */
+    M4_DIRA_PORT->SEL0 &= ~M4_DIRA_PIN;
+    M4_DIRA_PORT->SEL1 &= ~M4_DIRA_PIN;
+    M4_DIRA_PORT->DIR  |= M4_DIRA_PIN;
+    M4_DIRA_PORT->OUT  &= ~M4_DIRA_PIN;
+
+    M4_DIRB_PORT->SEL0 &= ~M4_DIRB_PIN;
+    M4_DIRB_PORT->SEL1 &= ~M4_DIRB_PIN;
+    M4_DIRB_PORT->DIR  |= M4_DIRB_PIN;
+    M4_DIRB_PORT->OUT  &= ~M4_DIRB_PIN;
+
+    M4_PWM_PORT->SEL0 &= ~M4_PWM_PIN;
+    M4_PWM_PORT->SEL1 &= ~M4_PWM_PIN;
+    M4_PWM_PORT->DIR  |= M4_PWM_PIN;
+    M4_PWM_PORT->OUT  &= ~M4_PWM_PIN;
 }
 
 static void initPWM(void){
@@ -152,10 +168,27 @@ void MC33926_SetMotor3Speed(int16_t speed){
     TIMER_A0->CCR[4] = dutyCycle;
 }
 
-void MC33926_SetSpeeds(int16_t m1Speed, int16_t m2Speed, int16_t m3Speed){
+void MC33926_SetMotor4Speed(int16_t speed){
+    if(speed > 0){
+        M4_DIRA_PORT->OUT |= M4_DIRA_PIN;    // dirA = 1
+        M4_DIRB_PORT->OUT &= ~M4_DIRB_PIN;   // dirB = 0
+        M4_PWM_PORT->OUT  |= M4_PWM_PIN;     // enable = HIGH
+    }else if(speed < 0){
+        M4_DIRA_PORT->OUT &= ~M4_DIRA_PIN;   // dirA = 0
+        M4_DIRB_PORT->OUT |= M4_DIRB_PIN;    // dirB = 1
+        M4_PWM_PORT->OUT  |= M4_PWM_PIN;     // enable = HIGH
+    }else{
+        M4_DIRA_PORT->OUT &= ~M4_DIRA_PIN;   // dirA = 0
+        M4_DIRB_PORT->OUT &= ~M4_DIRB_PIN;   // dirB = 0
+        M4_PWM_PORT->OUT  &= ~M4_PWM_PIN;    // enable = LOW
+    }
+}
+
+void MC33926_SetSpeeds(int16_t m1Speed, int16_t m2Speed, int16_t m3Speed, int16_t m4Speed){
     MC33926_SetMotor1Speed(m1Speed);
     MC33926_SetMotor2Speed(m2Speed);
     MC33926_SetMotor3Speed(m3Speed);
+    MC33926_SetMotor4Speed(m4Speed);
 }
 
 static uint16_t readADC(uint8_t memIndex){ //memIndex = 13 o 11 per leggere Motor 1 o Motor 2

@@ -1,5 +1,5 @@
 #include "msp.h"
-#include <ti/devices/msp432p4xx/driverlib/driverlib.h>
+
 #include <stdio.h>
 #include <stdint.h>
 #include "motor_driver/mc33926_driver.h"
@@ -184,6 +184,9 @@ static void decodeAndSetMotor(void){
     }
     else if(n_motore == 2){
         MC33926_SetMotor3Speed(motor_speed);
+    }
+    else if(n_motore == 3){
+        MC33926_SetMotor4Speed(value);  // pompa: no *4, qualsiasi valore != 0 accende
     }
 }
 

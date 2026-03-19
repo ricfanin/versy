@@ -39,6 +39,14 @@
 #define M3_FB_MEM 9
 
 
+/* Motor 4 pins (pompa - no PWM, solo ON/OFF) */
+#define M4_DIRA_PORT P3
+#define M4_DIRA_PIN  BIT5   // P3.5 (P5.0 non funziona in hardware)
+#define M4_DIRB_PORT P5
+#define M4_DIRB_PIN  BIT1   // P5.1
+#define M4_PWM_PORT  P5
+#define M4_PWM_PIN   BIT2   // P5.2 (GPIO, non timer)
+
 /*Pin di controllo generale--------------------*/
 #define ND2_PORT P3
 #define ND2_PIN BIT0 //P3.0 a HIGH -> driver acceso ; P3.0 a LOW-> driver spento
@@ -77,10 +85,18 @@ void MC33926_SetMotor2Speed(int16_t speed);
 
 void MC33926_SetMotor3Speed(int16_t speed);
 
+/*Controlla Motor 4 (pompa - ON/OFF, no PWM)
+ * Parametro speed:
+ *     -Positivo: pompa accesa (forward)
+ *     -Negativo: pompa accesa (reverse)
+ *     -Zero: pompa spenta
+ */
+void MC33926_SetMotor4Speed(int16_t speed);
+
 /*Controlla tutti i contemporaneamente
  *
  */
-void MC33926_SetSpeeds(int16_t m1Speed, int16_t m2Speed, int16_t m3Speed);
+void MC33926_SetSpeeds(int16_t m1Speed, int16_t m2Speed, int16_t m3Speed, int16_t m4Speed);
 
 
 /*Misura quanta corrente sta consumando Motor1, per rilevare se è sotto sforzo
