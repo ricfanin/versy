@@ -1,0 +1,14 @@
+# Dataset
+yolo_dataset/
+roboflow_dataset/
+*.zip
+
+# Modelli e pesi
+*.pt
+*.onnx
+models/trained/
+training/runs/
+
+# Output
+output/
+output_yolo/
