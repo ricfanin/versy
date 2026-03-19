@@ -41,7 +41,7 @@ class Motors:
         # if MOCK_MODE:
             # logger.info("Motors initialized in MOCK MODE - no real hardware")
 
-    def __send_motor_power(self, motor, power):
+    def send_motor_power(self, motor, power):
 
         if power < 0:
             power = 256 - abs(power)
@@ -61,17 +61,17 @@ class Motors:
             time.sleep(0.01)
             self.mspi2c.write(bytes(data))
 
-    def __set_powers(self, m1_power, m2_power, m3_power):
+    def set_powers(self, m1_power, m2_power, m3_power):
         # if MOCK_MODE:
             # logger.debug(
             #     f"Setting motor powers - M1: {m1_power}, M2: {m2_power}, M3: {m3_power}"
             # )
-        self.__send_motor_power(self.__M_1, m1_power)
-        self.__send_motor_power(self.__M_2, m2_power)
-        self.__send_motor_power(self.__M_3, m3_power)
+        self.send_motor_power(self.__M_1, m1_power)
+        self.send_motor_power(self.__M_2, m2_power)
+        self.send_motor_power(self.__M_3, m3_power)
 
     def set_pompa_power(self, power):
-        self.__send_motor_power(self.__M_POMPA, power)
+        self.send_motor_power(self.__M_POMPA, power)
         
     def __compute_kiwi_matrix(self):
         """
@@ -130,7 +130,7 @@ class Motors:
         # destra -> vx
 
         p1, p2, p3 = self.__computeKiwiDrivePowers(vx, -vy, -vang)
-        self.__set_powers(-int(p1), -int(p2), -int(p3))
+        self.set_powers(-int(p1), -int(p2), -int(p3))
 
     def test_motors(self) -> bool:
         """Test method for InitState to verify motors functionality"""
@@ -145,14 +145,10 @@ class Motors:
     def stop_motors(self):
         self.__set_powers(0, 0, 0)
 
-
-if __name__ == "__main__":
-    motors = Motors()
-    motors.set_pompa_power(50)
-
-
-
-# m1 -> 60
-# m2 -> 40
-# m3 -> 60
-# cosa significa?
+# Se serve fare qualche test per i motori
+#
+# if __name__ == "__main__":
+#     motors = Motors()
+#     motors.set_powers(50,50,50)
+#     time.sleep(1)
+#     motors.set_powers(0,0,0)
