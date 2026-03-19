@@ -12,3 +12,9 @@ raspberry-pi/robot/config/calibration_images
 raspberry-pi/robot/config/camera_calibration.npz
 
 .vscode
+
+# Model files
+*.onnx
+*.tflite
+*.pt
+*.pth
