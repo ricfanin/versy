@@ -57,7 +57,7 @@ def train(args):
         plots=True,
     )
 
-    best_path = os.path.join("runs", "segment", "table_seg", "weights", "best.pt")
+    best_path = str(model.trainer.best)
     print(f"\nTraining completato! Best model: {best_path}")
     return best_path
 
