@@ -1,2 +1,32 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-*
+# Virtual environments
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# Environment variables
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Trained models
+*.onnx
+*.pt
+*.pth
+*.tflite
+
+# Calibration
+calibration_images/
+*.npz
+
+# Claude Code
+.claude

@@ -104,22 +104,23 @@ class MovingState(BaseState):
                 return ScanState(self.sm)
             return None
         
-        self.set_is_centered_flag()
+        # self.set_is_centered_flag()
 
-        # per cambiare priorità delle azioni basta spostarle (es: voglio che prima sia parallelo e poi si avvicina, inverto is_close con is_parallel)
-        if not self.is_centered:
-            if not self.is_aruco_centered(15): #pixel di deadzone per considerare l'aruco centrato
-                return None
+        # # per cambiare priorità delle azioni basta spostarle (es: voglio che prima sia parallelo e poi si avvicina, inverto is_close con is_parallel)
+        # if not self.is_centered:
+        #     if not self.is_aruco_centered(15): #pixel di deadzone per considerare l'aruco centrato
+        #         return None
 
-        if not self.is_close_to_aruco(30): # distanza in cm per considerare l'aruco abbastanza vicino
-            return None
+        # if not self.is_close_to_aruco(30): # distanza in cm per considerare l'aruco abbastanza vicino
+        #     return None
 
-        if not self.is_parallel_to_aruco(19): # angolo di pitch in gradi per considerare l'aruco abbastanza parallelo
-            return None
+        # if not self.is_parallel_to_aruco(19): # angolo di pitch in gradi per considerare l'aruco abbastanza parallelo
+        #     return None
 
-        if not self.is_close_to_aruco(19):
-            return None
+        # if not self.is_close_to_aruco(19):
+        #     return None
 
+        return None
         logger.error("ARRIVATO AL BICCHIERE")
         self.sm.robot.motors.stop_motors()
         self.sm.robot.motors.set_pompa_power(255)

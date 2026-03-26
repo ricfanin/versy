@@ -11,7 +11,7 @@ from picamera2 import Picamera2
 import numpy as np
 
 CHESSBOARD_SIZE = (9, 6)  # Numero di angoli INTERNI (colonne, righe)
-SQUARE_SIZE = 7.8  # Dimensione del quadrato in mm
+SQUARE_SIZE = 27  # Dimensione del quadrato in mm
 NUM_IMAGES = 20  # Numero di immagini da catturare
 
 
@@ -33,9 +33,9 @@ def capture_calibration_images():
 
     brightness: Optional[float] = 0.1
 
-    hflip: bool = True
+    hflip: bool = False
 
-    vflip: bool = True
+    vflip: bool = False
 
 
 

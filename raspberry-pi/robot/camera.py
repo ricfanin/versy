@@ -22,7 +22,7 @@ class Camera:
         self,
         resolution: Tuple[int, int] = (320, 240),
         brightness: Optional[float] = 0.2,
-        hflip: bool = True,
+        hflip: bool = False,
         vflip: bool = True,
     ):
         self.cam = Picamera2()

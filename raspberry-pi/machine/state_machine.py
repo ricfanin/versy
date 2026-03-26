@@ -1,5 +1,5 @@
-from machine.base_state import BaseState
-from machine.states.init_state import InitState
+from .base_state import BaseState
+from .states.init_state import InitState
 from robot.robot import Robot
 from utils.debug import get_logger
 
