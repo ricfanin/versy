@@ -115,21 +115,30 @@ class Motors:
         # logger.debug(f"after {potenze}")
         return potenze
 
-    def __computeKiwiDrivePowers(self, vx, vy, vang=0):
+    def __computeKiwiDrivePowersWithProportion(self, vx, vy, vang=0):
         v = np.array([vx, vy, vang])
 
         potenze = self.kiwi_matrix @ v
         potenze = self.__compute_proportions(potenze, 20)
         return potenze
 
-    def setDirectionAndSpeed(self, vx, vy, vang=0):
+    def __computeKiwiDrivePowers(self, vx, vy, vang=0):
+        v = np.array([vx, vy, vang])
+
+        potenze = self.kiwi_matrix @ v
+        return potenze
+
+    def setDirectionAndSpeed(self, vx, vy, vang=0, with_proportions=False):
         """Imposta la direzione e la velocità dei motori."""
 
         # avanti -> vy
         # rotazione oraria -> vang
         # destra -> vx
 
-        p1, p2, p3 = self.__computeKiwiDrivePowers(vx, -vy, -vang)
+        if with_proportions:
+            p1, p2, p3 = self.__computeKiwiDrivePowersWithProportion(vx, -vy, -vang)
+        else:
+            p1, p2, p3 = self.__computeKiwiDrivePowers(vx, -vy, -vang)
         self.set_powers(-int(p1), -int(p2), -int(p3))
 
     def test_motors(self) -> bool:
