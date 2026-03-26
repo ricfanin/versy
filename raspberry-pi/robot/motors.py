@@ -119,7 +119,7 @@ class Motors:
         v = np.array([vx, vy, vang])
 
         potenze = self.kiwi_matrix @ v
-        potenze = self.__compute_proportions(potenze, 35)
+        potenze = self.__compute_proportions(potenze, 20)
         return potenze
 
     def setDirectionAndSpeed(self, vx, vy, vang=0):
@@ -143,7 +143,7 @@ class Motors:
             return False
 
     def stop_motors(self):
-        self.__set_powers(0, 0, 0)
+        self.set_powers(0, 0, 0)
 
 # Se serve fare qualche test per i motori
 #

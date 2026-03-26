@@ -11,7 +11,7 @@ from picamera2 import Picamera2
 import numpy as np
 
 CHESSBOARD_SIZE = (9, 6)  # Numero di angoli INTERNI (colonne, righe)
-SQUARE_SIZE = 18  # Dimensione del quadrato in mm
+SQUARE_SIZE = 7.8  # Dimensione del quadrato in mm
 NUM_IMAGES = 20  # Numero di immagini da catturare
 
 

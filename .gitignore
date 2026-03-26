@@ -1,20 +1,2 @@
-# Virtual environments
-venv/
-.env/
-.venv/
-
-# Python cache
-__pycache__/
-*.pyc
-
-#config camera
-raspberry-pi/robot/config/calibration_images
-raspberry-pi/robot/config/camera_calibration.npz
-
-.vscode
-
-# Model files
-*.onnx
-*.tflite
-*.pt
-*.pth
+# Created by venv; see https://docs.python.org/3/library/venv.html
+*

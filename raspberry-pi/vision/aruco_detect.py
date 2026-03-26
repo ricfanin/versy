@@ -60,7 +60,10 @@ class ArucoDetector:
         # frame_flipped = cv2.flip(frame, 0)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gaus = cv2.GaussianBlur(gray, (3, 3), 0)
-        return gaus
+
+        cv2.imshow("g", gray)
+        cv2.imshow("gaus", gaus)
+        return gray
 
     def __process_marker_data(self, index, m_id, corners, rvec, tvec, frame_height):
         """Calcola distanze, angoli e organizza il dizionario."""

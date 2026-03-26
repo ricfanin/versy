@@ -16,7 +16,7 @@ class ScanState(BaseState):
     def execute(self):
         frame = self.sm.robot.camera.get_frame()
         res = self.sm.robot.aruco_detector.detect(frame) if frame is not None else []
-        if res != [] and res[0]["id"] == 0: # seleziono solo il marker con id 0
+        if res != [] and res[0]["id"] == 2: # seleziono solo il marker con id 0
             self.sm.robot.motors.stop_motors()
             logger.debug(f"ArUco markers detected: {len(res)} markers found")
             from .moving_state import MovingState

@@ -73,7 +73,7 @@ class MovingState(BaseState):
 
     def is_close_to_aruco(self, target_dist: int):
         if self.distance > target_dist:
-            self.sm.robot.motors.setDirectionAndSpeed(0, 40, 0)
+            self.sm.robot.motors.setDirectionAndSpeed(0, 10, 0)
             self.updated = False
             return False
         return True
@@ -85,9 +85,9 @@ class MovingState(BaseState):
 
         if abs(self.pitch) > target_pitch:
             if self.pitch > 0:
-                self.sm.robot.motors.setDirectionAndSpeed(-20, 0, 0)
+                self.sm.robot.motors.setDirectionAndSpeed(-7, 0, 0)
             else:
-                self.sm.robot.motors.setDirectionAndSpeed(20, 0, 0)
+                self.sm.robot.motors.setDirectionAndSpeed(7, 0, 0)
             self.updated = False
             return False
         return True
@@ -111,19 +111,22 @@ class MovingState(BaseState):
             if not self.is_aruco_centered(15): #pixel di deadzone per considerare l'aruco centrato
                 return None
 
-        if not self.is_close_to_aruco(15): # distanza in cm per considerare l'aruco abbastanza vicino
+        if not self.is_close_to_aruco(30): # distanza in cm per considerare l'aruco abbastanza vicino
             return None
 
-        if not self.is_parallel_to_aruco(5): # angolo di pitch in gradi per considerare l'aruco abbastanza parallelo
+        if not self.is_parallel_to_aruco(19): # angolo di pitch in gradi per considerare l'aruco abbastanza parallelo
             return None
 
-        if not self.is_close_to_aruco(12):
+        if not self.is_close_to_aruco(19):
             return None
-        
 
         logger.error("ARRIVATO AL BICCHIERE")
-        self.sm.robot.motors.setDirectionAndSpeed(0, 50, 0)
-        time.sleep(0.8)
+        self.sm.robot.motors.stop_motors()
+        self.sm.robot.motors.set_pompa_power(255)
+        time.sleep(0.5)
+        self.sm.robot.motors.set_pompa_power(0)
+        # self.sm.robot.motors.setDirectionAndSpeed(0, 50, 0)
+        # time.sleep(0.8)
         self.sm.robot.motors.stop_motors()
         logger.error("STO VERSANDO LO SDROGO ....")
         time.sleep(3)
