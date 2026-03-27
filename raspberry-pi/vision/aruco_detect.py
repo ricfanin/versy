@@ -88,7 +88,7 @@ class ArucoDetector:
                 if show:
                     self.__draw_debug(frame, marker_data, corners_display[i])
         if show:
-            cv2.imshow("frame", frame)
+            cv2.imshow("frame", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             cv2.waitKey(1)  # Necessario per aggiornare la finestra OpenCV
         if results != []:
             logger.info(f"Rilevati {len(results)} marker(s)")
@@ -97,7 +97,7 @@ class ArucoDetector:
     def __preprocess(self, frame):
         """Converte in grigio e applica blur"""
         frame_flipped = cv2.flip(frame, 0)
-        gray = cv2.cvtColor(frame_flipped, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame_flipped, cv2.COLOR_RGB2GRAY)
         gaus = cv2.GaussianBlur(gray, (3, 3), 0)
 
         cv2.imshow("g", gray)

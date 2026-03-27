@@ -146,14 +146,14 @@ def capture_calibration_images():
             2,
         )
 
-        cv2.imshow("Calibrazione Camera", display_frame)
+        cv2.imshow("Calibrazione Camera", cv2.cvtColor(display_frame, cv2.COLOR_RGB2BGR))
 
         key = cv2.waitKey(1) & 0xFF
 
         # SPAZIO per catturare
         if key == ord(" ") and ret_chess:
             img_name = f"calibration_images/calib_{img_counter:02d}.jpg"
-            cv2.imwrite(img_name, frame)
+            cv2.imwrite(img_name, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             print(f"Immagine {img_counter + 1}/{NUM_IMAGES} salvata: {img_name}")
             img_counter += 1
 

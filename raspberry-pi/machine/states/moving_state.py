@@ -1,6 +1,7 @@
-from state_machine import StateMachine
+from machine.state_machine import StateMachine
 from utils.debug import get_logger
 from machine.base_state import BaseState
+import math
 import time
 
 logger = get_logger("states.moving")
@@ -14,8 +15,8 @@ class MovingState(BaseState):
         self.sm = state_machine
         self.initial_marker = marker
 
-        self.frame_x = self.sm.robot.FRAME_WIDTH // 2
-        self.frame_y = self.sm.robot.FRAME_HEIGHT // 2
+        self.target_x = self.sm.robot.FRAME_WIDTH // 2
+        self.target_y = (self.sm.robot.FRAME_HEIGHT // 2) - 60
 
         self.marker = marker
         self.distance = self.marker["distance"]
@@ -46,17 +47,16 @@ class MovingState(BaseState):
             self.updated = True
             self.retries = 0
         else:
-            self.sm.robot.motors.stop_motors()
             self.retries += 1
     
     def set_is_centered_flag(self):
-        error_x = self.frame_x - self.center_x
+        error_x = self.target_x - self.center_x
         if abs(error_x) >= 50: # pixel di deadzone per considerare l'aruco centrato
             logger.warning(f"Marker not centered: error_x={error_x}")
             self.is_centered = False
 
     def is_aruco_centered(self, deadzone: int):
-        error_x = self.frame_x - self.center_x
+        error_x = self.target_x - self.center_x
         logger.debug(f"error_x: {error_x}")
         # con error_X positivo, il marker è a sinistra del centro, con error_X negativo, il marker è a destra del centro
         if abs(error_x) > deadzone:
@@ -97,6 +97,10 @@ class MovingState(BaseState):
         # marker:  {'id': 0, 'rvec': array([ x, y, z]), 'tvec': array([x ,  y,  z]), 'distance': 14.322984264396954, 'angles': (np.float64(x), np.float64(y), np.float64(z)), 'center': (x, y)}
         if not self.updated:
             self.update_data()
+
+            print("retries", self.retries)
+            if self.retries > 3:
+                self.sm.robot.motors.stop_motors()
             if self.retries > 100:  # numero di frame senza un aruco
                 from .scan_state import ScanState
 
@@ -119,7 +123,21 @@ class MovingState(BaseState):
 
         # if not self.is_close_to_aruco(19):
         #     return None
+        error_x = -(self.center_x - self.target_x) # il meno è dovuto al vflip
+        error_y = self.center_y - self.target_y
+        vx = math.copysign(math.sqrt(abs(error_x)), error_x) * 4
+        vy = math.copysign(math.sqrt(abs(error_y)), error_y) * 2
+        
+        print("vx",vx,"vy",vy,"pitch", self.pitch, "error x ", error_x, "error y ", error_y, )
 
+        # if abs(self.pitch) < 5 or error_x > 50 or error_y > 50 or True:
+        #     self.sm.robot.motors.setDirectionAndSpeed(vx, vy, 0)
+        # elif self.pitch > 0:
+        #     self.sm.robot.motors.setDirectionAndSpeed(vx + 7, vy, 10)
+        # else:
+        #     self.sm.robot.motors.setDirectionAndSpeed(vx -7 , vy , -10)
+
+        self.updated = False
         return None
         logger.error("ARRIVATO AL BICCHIERE")
         self.sm.robot.motors.stop_motors()
