@@ -21,7 +21,7 @@ class Camera:
     def __init__(
         self,
         resolution: Tuple[int, int] = (320, 240),
-        brightness: Optional[float] = 0.2,
+        brightness: Optional[float] = -0.2,
         hflip: bool = False,
         vflip: bool = True,
     ):

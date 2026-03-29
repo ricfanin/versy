@@ -16,7 +16,7 @@ class MovingState(BaseState):
         self.initial_marker = marker
 
         self.target_x = self.sm.robot.FRAME_WIDTH // 2
-        self.target_y = (self.sm.robot.FRAME_HEIGHT // 2) - 60
+        self.target_y = (self.sm.robot.FRAME_HEIGHT // 2) - 70
 
         self.marker = marker
         self.distance = self.marker["distance"]
@@ -27,6 +27,10 @@ class MovingState(BaseState):
         self.center_y = self.marker["center"][1]
         self.retries = 0
         self.is_centered = False
+        self.last_known_center = self.marker["center"]
+        self.last_known_id = self.marker["id"]
+        self.last_known_perimeter = self.marker.get("perimeter")
+        self.low_confidence_count = 0
 
     def enter(self) -> None:
         logger.info("Entering moving state")
@@ -35,15 +39,43 @@ class MovingState(BaseState):
 
     def update_data(self):
         frame = self.sm.robot.camera.get_frame()
-        res = self.sm.robot.aruco_detector.detect(frame) if frame is not None else []
+        # res = self.sm.robot.aruco_detector.detect(
+        #     frame,
+        #     last_known_center=self.last_known_center,
+        #     last_known_id=self.last_known_id,
+        #     last_known_perimeter=self.last_known_perimeter,
+        # ) if frame is not None else []
+        res = self.sm.robot.aruco_detector.detect(frame)
+
+        EXPECTED_PERIMETER = 223
+        PERIMETER_TOLERANCE = 0.5  # ±50%
+
+        if res != []:
+            for m in res:
+                logger.info(f"Aruco id={m['id']} perimeter={m.get('perimeter')}")
+            res = [m for m in res if m.get("perimeter") is not None
+                   and abs(m["perimeter"] - EXPECTED_PERIMETER) / EXPECTED_PERIMETER <= PERIMETER_TOLERANCE]
+
         if res != []:
             self.marker = res[0]
-            self.distance = self.marker["distance"]
-            self.roll = self.marker["angles"][0]
-            self.pitch = self.marker["angles"][1]
-            self.yaw = self.marker["angles"][2]
             self.center_x = self.marker["center"][0]
             self.center_y = self.marker["center"][1]
+            self.last_known_center = self.marker["center"]
+            self.last_known_id = self.marker["id"]
+
+            if self.marker["confidence"] == "full":
+                self.distance = self.marker["distance"]
+                self.roll = self.marker["angles"][0]
+                self.pitch = self.marker["angles"][1]
+                self.yaw = self.marker["angles"][2]
+                self.last_known_perimeter = self.marker["perimeter"]
+                self.low_confidence_count = 0
+            else:
+                self.low_confidence_count += 1
+                if self.low_confidence_count > 5:
+                    self.retries += 1
+                    return
+
             self.updated = True
             self.retries = 0
         else:
@@ -98,7 +130,6 @@ class MovingState(BaseState):
         if not self.updated:
             self.update_data()
 
-            print("retries", self.retries)
             if self.retries > 3:
                 self.sm.robot.motors.stop_motors()
             if self.retries > 100:  # numero di frame senza un aruco
@@ -125,17 +156,22 @@ class MovingState(BaseState):
         #     return None
         error_x = -(self.center_x - self.target_x) # il meno è dovuto al vflip
         error_y = self.center_y - self.target_y
-        vx = math.copysign(math.sqrt(abs(error_x)), error_x) * 4
-        vy = math.copysign(math.sqrt(abs(error_y)), error_y) * 2
+        # vx = math.copysign(math.sqrt(abs(error_x)), error_x) * 4
+        # vy = math.copysign(math.sqrt(abs(error_y)), error_y) * 2
         
-        print("vx",vx,"vy",vy,"pitch", self.pitch, "error x ", error_x, "error y ", error_y, )
+        vx = min(error_x * 0.7, 50)
+        vy =  min(error_y * 0.3, 30) 
+        vr =  min(self.yaw * 0.5, 13) 
 
-        # if abs(self.pitch) < 5 or error_x > 50 or error_y > 50 or True:
+        self.sm.robot.motors.setDirectionAndSpeed(vx, vy, vr)
+        # print("vx",vx,"vy",vy,"vr",vr)
+
+        # if abs(self.yaw) < 3:
         #     self.sm.robot.motors.setDirectionAndSpeed(vx, vy, 0)
-        # elif self.pitch > 0:
-        #     self.sm.robot.motors.setDirectionAndSpeed(vx + 7, vy, 10)
+        # elif self.yaw > 0:
+        #     self.sm.robot.motors.setDirectionAndSpeed(vx-10, vy, 14)
         # else:
-        #     self.sm.robot.motors.setDirectionAndSpeed(vx -7 , vy , -10)
+        #     self.sm.robot.motors.setDirectionAndSpeed(vx+10 , vy , -14)
 
         self.updated = False
         return None

@@ -11,7 +11,7 @@ logger = get_logger("aruco_detect")
 
 
 class ArucoDetector:
-    def __init__(self, calibration_path=None, marker_size=0.025):
+    def __init__(self, calibration_path=None, marker_size=0.046):
         if calibration_path is None:
             # Percorso relativo al file corrente
             calibration_path = (
@@ -19,22 +19,41 @@ class ArucoDetector:
             )
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.aruco_parameters = aruco.DetectorParameters()
+
+        # Piu' finestre di soglia adattiva (6 invece di 3)
+        self.aruco_parameters.adaptiveThreshWinSizeMin = 3
+        self.aruco_parameters.adaptiveThreshWinSizeMax = 23
+        self.aruco_parameters.adaptiveThreshWinSizeStep = 4
+        # Corner refinement tramite contorno (stabile per marker piccoli)
+        self.aruco_parameters.cornerRefinementMethod = aruco.CORNER_REFINE_CONTOUR
+        # Error correction completa (1 bit su DICT_4X4_50)
+        self.aruco_parameters.errorCorrectionRate = 1.0
+        # Forma piu' tollerante per quadrilateri distorti
+        self.aruco_parameters.polygonalApproxAccuracyRate = 0.05
+        # Corner distance rilassata per marker piccoli
+        self.aruco_parameters.minCornerDistanceRate = 0.02
+        # Piu' pixel per cella nella rettifica prospettica
+        self.aruco_parameters.perspectiveRemovePixelPerCell = 6
+
         self.detector = aruco.ArucoDetector(self.aruco_dict, self.aruco_parameters)
         data = np.load(calibration_path)
         self.camera_matrix = data["camera_matrix"]
         self.dist_coeffs = data["dist_coeffs"]
         self.marker_size = marker_size
 
+        self.CANDIDATE_MAX_DISTANCE_PX = 60
+        self.CANDIDATE_SIZE_TOLERANCE = 0.5  # perimetro candidato deve essere entro +/-50% dell'ultimo noto
+
         # Buffer per smoothing del pitch (debug)
         self.pitch_history = []
         self.PITCH_BUFFER_SIZE = 10
 
-    def detect(self, frame, show=True):
+    def detect(self, frame, show=True, last_known_center=None, last_known_id=None, last_known_perimeter=None):
         """restituisce array di markers rilevati fonendo:
-        id, rvc, tvec, distance, roll, pitch, yaw, center"""
+        id, rvc, tvec, distance, roll, pitch, yaw, center, confidence"""
         h = frame.shape[0]
         pframe = self.__preprocess(frame)
-        corners, ids, _ = self.detector.detectMarkers(pframe)
+        corners, ids, rejected = self.detector.detectMarkers(pframe)
         results = []
         if ids is not None:
             # Punti 3D del marker (ordine: TL, TR, BR, BL)
@@ -83,12 +102,50 @@ class ArucoDetector:
                     tvecs[i],
                     h,
                 )
+                marker_data["confidence"] = "full"
                 results.append(marker_data)
 
                 if show:
                     self.__draw_debug(frame, marker_data, corners_display[i])
+
+        elif last_known_center is not None and rejected is not None and len(rejected) > 0:
+            best_candidate = None
+            best_dist_sq = float('inf')
+
+            for candidate_corners in rejected:
+                # Check dimensioni: il perimetro deve essere simile all'ultimo noto
+                if last_known_perimeter is not None:
+                    cand_perimeter = self.__compute_perimeter(candidate_corners[0])
+                    ratio = cand_perimeter / last_known_perimeter
+                    if abs(ratio - 1.0) > self.CANDIDATE_SIZE_TOLERANCE:
+                        continue
+
+                center = np.mean(candidate_corners[0], axis=0)
+                center_display = (int(center[0]), h - int(center[1]))
+
+                dx = center_display[0] - last_known_center[0]
+                dy = center_display[1] - last_known_center[1]
+                dist_sq = dx * dx + dy * dy
+
+                if dist_sq < best_dist_sq:
+                    best_dist_sq = dist_sq
+                    best_candidate = center_display
+
+            if best_candidate is not None and best_dist_sq < self.CANDIDATE_MAX_DISTANCE_PX ** 2:
+                results.append({
+                    "id": last_known_id if last_known_id is not None else -1,
+                    "rvec": None,
+                    "tvec": None,
+                    "distance": None,
+                    "angles": None,
+                    "center": best_candidate,
+                    "confidence": "low",
+                    "perimeter": None,
+                })
+                logger.info(f"Fallback: rejected candidate at {best_candidate}, dist={best_dist_sq**0.5:.1f}px")
+
         if show:
-            cv2.imshow("frame", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            cv2.imshow("frame", frame)
             cv2.waitKey(1)  # Necessario per aggiornare la finestra OpenCV
         if results != []:
             logger.info(f"Rilevati {len(results)} marker(s)")
@@ -97,18 +154,24 @@ class ArucoDetector:
     def __preprocess(self, frame):
         """Converte in grigio e applica blur"""
         frame_flipped = cv2.flip(frame, 0)
-        gray = cv2.cvtColor(frame_flipped, cv2.COLOR_RGB2GRAY)
-        gaus = cv2.GaussianBlur(gray, (3, 3), 0)
-
-        cv2.imshow("g", gray)
-        cv2.imshow("gaus", gaus)
+        gray = cv2.cvtColor(frame_flipped, cv2.COLOR_BGR2GRAY)
         return gray
+
+    @staticmethod
+    def __compute_perimeter(corners_pts):
+        """Calcola il perimetro di un quadrilatero dai suoi 4 corner points."""
+        pts = corners_pts
+        perimeter = 0.0
+        for i in range(4):
+            perimeter += np.linalg.norm(pts[i] - pts[(i + 1) % 4])
+        return perimeter
 
     def __process_marker_data(self, index, m_id, corners, rvec, tvec, frame_height):
         """Calcola distanze, angoli e organizza il dizionario."""
         center = np.mean(corners[0], axis=0)
         roll, pitch, yaw = self.__rotation_vector_to_euler_angles(rvec)
         distance = np.linalg.norm(tvec)
+        perimeter = self.__compute_perimeter(corners[0])
         return {
             "id": int(m_id),
             "rvec": rvec,
@@ -116,6 +179,7 @@ class ArucoDetector:
             "distance": float(distance) * 100,
             "angles": (roll, pitch, yaw),
             "center": (int(center[0]), frame_height - int(center[1])),
+            "perimeter": float(perimeter),
         }
 
     def __draw_debug(self, frame, data, corners):
@@ -163,9 +227,7 @@ class ArucoDetector:
         x_text = width - 320
         line_h = 22
         lines = [
-            f"ID:{m_id}  Dist:{dist:.1f}cm",
-            f"Roll:{r:.1f}  Pitch:{p:.1f}  Yaw:{y:.1f}",
-            f"Pitch avg({self.PITCH_BUFFER_SIZE}):{pitch_avg:.1f}  std:{pitch_std:.1f}",
+            f"ID:{m_id}  Dist:{dist:.1f}cm  Yaw:{y:.1f}",
         ]
         for i, line in enumerate(lines):
             cv2.putText(
