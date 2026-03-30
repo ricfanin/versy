@@ -113,8 +113,8 @@ def main():
     parser.add_argument("--conf", type=float, default=0.5)
     parser.add_argument("--source", default="picamera", help="picamera | usb | path/to/video")
     parser.add_argument("--camera-id", type=int, default=0)
-    parser.add_argument("--width", type=int, default=640)
-    parser.add_argument("--height", type=int, default=480)
+    parser.add_argument("--width", type=int, default=320)
+    parser.add_argument("--height", type=int, default=240)
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--int8", action="store_true", help="Usa modello quantizzato INT8")
     parser.add_argument("--save-interval", type=int, default=30)
@@ -145,6 +145,9 @@ def main():
             outputs = session.run(None, {input_name: input_data})
             table_mask = postprocess(outputs, frame.shape[0], frame.shape[1], args.size, args.conf)
             elapsed = time.perf_counter() - t0
+
+            frame = cv2.flip(frame, 0)
+            table_mask = cv2.flip(table_mask, 0)
 
             fps = 1.0 / elapsed
             fps_list.append(fps)
