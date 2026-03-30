@@ -1,11 +1,5 @@
-# Dataset
 yolo_dataset/
 roboflow_dataset/
 *.zip
-
-# Training runs
 training/runs/
-
-# Output
 output/
-output_yolo/
