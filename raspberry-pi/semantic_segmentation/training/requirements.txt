@@ -1,8 +1,5 @@
-torch
-torchvision
-transformers
-albumentations
-evaluate
-pillow
+ultralytics
 onnx
 onnxruntime
+pycocotools
+opencv-python

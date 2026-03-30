@@ -1,28 +1,22 @@
 #!/usr/bin/env python3
 """
-Train YOLOv8n-seg per table segmentation ed esporta ONNX per RPi4.
+Training YOLOv8n-seg per table segmentation + export ONNX per RPi4.
 
 Uso:
-    pip install ultralytics
-
-    # Training
     python train_yolov8_seg.py --data ../yolo_dataset/data.yaml --epochs 100
-
-    # Solo export ONNX
     python train_yolov8_seg.py --export runs/segment/table_seg/weights/best.pt --size 256
-
-    # Training + export a piu' risoluzioni
-    python train_yolov8_seg.py --data ../yolo_dataset/data.yaml --epochs 100 --size 256
+    python train_yolov8_seg.py --export best.pt --size 256 --int8 --data ../yolo_dataset/data.yaml
 """
 
 import argparse
+import glob
 import os
 
 
 def train(args):
     from ultralytics import YOLO
 
-    model = YOLO("yolov8n-seg.pt")  # Pre-trained su COCO-seg
+    model = YOLO("yolov8n-seg.pt")
 
     model.train(
         data=args.data,
@@ -34,12 +28,10 @@ def train(args):
         project="runs/segment",
         name="table_seg",
         exist_ok=True,
-        # Ottimizzazioni per dataset piccolo
         patience=20,
         lr0=0.01,
         lrf=0.01,
         warmup_epochs=5,
-        # Augmentation
         hsv_h=0.015,
         hsv_s=0.5,
         hsv_v=0.3,
@@ -50,7 +42,6 @@ def train(args):
         mosaic=1.0,
         mixup=0.1,
         copy_paste=0.1,
-        # Salvataggio
         save=True,
         save_period=10,
         val=True,
@@ -58,98 +49,98 @@ def train(args):
     )
 
     best_path = str(model.trainer.best)
-    print(f"\nTraining completato! Best model: {best_path}")
+    print(f"\nTraining completato. Best model: {best_path}")
     return best_path
 
 
 def export_onnx(model_path, img_size, output_dir):
-    """Esporta YOLOv8-seg in ONNX per RPi4."""
     from ultralytics import YOLO
+    import shutil
 
     model = YOLO(model_path)
     os.makedirs(output_dir, exist_ok=True)
 
-    model.export(
-        format="onnx",
-        imgsz=img_size,
-        simplify=True,
-        opset=17,
-        half=False,  # RPi4 non supporta FP16
-    )
+    model.export(format="onnx", imgsz=img_size, simplify=True, opset=17, half=False)
 
     src_onnx = model_path.replace(".pt", ".onnx")
     dst_onnx = os.path.join(output_dir, f"yolov8n_seg_table_{img_size}.onnx")
 
-    if os.path.exists(src_onnx):
-        import shutil
-        shutil.copy2(src_onnx, dst_onnx)
-        size_mb = os.path.getsize(dst_onnx) / 1e6
-        print(f"ONNX esportato: {dst_onnx} ({size_mb:.1f} MB)")
-    else:
+    if not os.path.exists(src_onnx):
         print(f"Errore: ONNX non trovato in {src_onnx}")
         return None
 
-    # Verifica con onnxruntime
-    try:
-        import numpy as np
-        import onnxruntime as ort
-        session = ort.InferenceSession(dst_onnx)
-        input_info = session.get_inputs()[0]
-        dummy = np.random.randn(1, 3, img_size, img_size).astype(np.float32)
-        outputs = session.run(None, {input_info.name: dummy})
-        print(f"Verifica OK: {len(outputs)} output(s)")
-        for i, out in enumerate(outputs):
-            print(f"  output[{i}]: shape={out.shape}, dtype={out.dtype}")
-    except ImportError:
-        print("Installa onnxruntime per verificare: pip install onnxruntime")
-
+    shutil.copy2(src_onnx, dst_onnx)
+    size_mb = os.path.getsize(dst_onnx) / 1e6
+    print(f"ONNX FP32 esportato: {dst_onnx} ({size_mb:.1f} MB)")
     return dst_onnx
 
 
+def quantize_int8(onnx_path, output_dir, img_size, data_dir=None):
+    """Quantizzazione post-export con onnxruntime.quantization."""
+    from onnxruntime.quantization import quantize_dynamic, QuantType
+
+    dst = os.path.join(output_dir, f"yolov8n_seg_table_{img_size}_int8.onnx")
+
+    quantize_dynamic(
+        onnx_path,
+        dst,
+        weight_type=QuantType.QInt8,
+    )
+
+    size_mb = os.path.getsize(dst) / 1e6
+    print(f"ONNX INT8 esportato: {dst} ({size_mb:.1f} MB)")
+
+    # Verifica
+    import numpy as np
+    import onnxruntime as ort
+    session = ort.InferenceSession(dst)
+    dummy = np.random.randn(1, 3, img_size, img_size).astype(np.float32)
+    outputs = session.run(None, {session.get_inputs()[0].name: dummy})
+    print(f"Verifica OK: {len(outputs)} output(s)")
+    for i, out in enumerate(outputs):
+        print(f"  output[{i}]: shape={out.shape}")
+
+    return dst
+
+
 def validate(model_path, data_yaml):
-    """Valida il modello sul validation set."""
     from ultralytics import YOLO
 
     model = YOLO(model_path)
     metrics = model.val(data=data_yaml)
 
-    print(f"\n--- Validation Results ---")
-    print(f"Box mAP50: {metrics.box.map50:.4f}")
-    print(f"Box mAP50-95: {metrics.box.map:.4f}")
-    print(f"Mask mAP50: {metrics.seg.map50:.4f}")
-    print(f"Mask mAP50-95: {metrics.seg.map:.4f}")
+    print(f"\nBox  mAP50: {metrics.box.map50:.4f}  mAP50-95: {metrics.box.map:.4f}")
+    print(f"Mask mAP50: {metrics.seg.map50:.4f}  mAP50-95: {metrics.seg.map:.4f}")
     return metrics
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train YOLOv8n-seg per table segmentation")
-    parser.add_argument("--data", default="../yolo_dataset/data.yaml", help="Path a data.yaml")
-    parser.add_argument("--output", default="../models/trained", help="Directory output modelli")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data", default="../yolo_dataset/data.yaml")
+    parser.add_argument("--output", default="../models/trained")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch", type=int, default=16)
-    parser.add_argument("--size", type=int, default=256, help="Risoluzione input")
+    parser.add_argument("--size", type=int, default=256)
     parser.add_argument("--workers", type=int, default=2)
-    parser.add_argument("--device", default="", help="cuda device o cpu")
-    parser.add_argument("--export", type=str, default=None,
-                        help="Path modello .pt da esportare (skip training)")
-    parser.add_argument("--validate-only", type=str, default=None,
-                        help="Path modello .pt da validare (skip training)")
-
+    parser.add_argument("--device", default="")
+    parser.add_argument("--export", type=str, default=None, help="Path .pt da esportare (skip training)")
+    parser.add_argument("--int8", action="store_true", help="Quantizzazione INT8 post-export")
+    parser.add_argument("--validate-only", type=str, default=None, help="Path .pt da validare")
     args = parser.parse_args()
 
     if args.validate_only:
         validate(args.validate_only, args.data)
     elif args.export:
-        export_onnx(args.export, args.size, args.output)
+        fp32_path = export_onnx(args.export, args.size, args.output)
+        if args.int8 and fp32_path:
+            quantize_int8(fp32_path, args.output, args.size)
     else:
         best_path = train(args)
-
-        print("\n--- Validazione finale ---")
         validate(best_path, args.data)
-
-        print("\n--- Export ONNX ---")
         os.makedirs(args.output, exist_ok=True)
-        export_onnx(best_path, args.size, args.output)
+        fp32_path = export_onnx(best_path, args.size, args.output)
+        if args.int8 and fp32_path:
+            quantize_int8(fp32_path, args.output, args.size)
 
 
 if __name__ == "__main__":
