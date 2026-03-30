@@ -53,7 +53,11 @@ class ArucoDetector:
         id, rvc, tvec, distance, roll, pitch, yaw, center, confidence"""
         h = frame.shape[0]
         pframe = self.__preprocess(frame)
-        corners, ids, rejected = self.detector.detectMarkers(pframe)
+        try:
+            corners, ids, rejected = self.detector.detectMarkers(pframe)
+        except cv2.error:
+            logger.warning("ArUco detectMarkers failed (contour interpolation), skipping frame")
+            return []
         results = []
         if ids is not None:
             # Punti 3D del marker (ordine: TL, TR, BR, BL)

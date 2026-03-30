@@ -22,7 +22,10 @@ class InitState(BaseState):
         if not self.sm.robot.motors.test_motors():
             logger.error("Motors test failed, retrying")
             return None
-        logger.info("Initialization complete - camera and motors OK")
+        if not self.sm.robot.tofs.test_tofs():
+            logger.error("ToF test failed, retrying")
+            return None
+        logger.info("Initialization complete - camera, motors and ToF OK")
         from .scan_state import ScanState
 
         return ScanState(self.sm)

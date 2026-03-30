@@ -156,8 +156,10 @@ class Motors:
 
 # Se serve fare qualche test per i motori
 #
-# if __name__ == "__main__":
-#     motors = Motors()
-#     motors.set_powers(50,50,50)
-#     time.sleep(1)
-#     motors.set_powers(0,0,0)
+if __name__ == "__main__":
+    motors = Motors()
+    # motors.set_powers(50,50,50)
+    motors.setDirectionAndSpeed(40, 0, 0)
+    time.sleep(1)
+    motors.setDirectionAndSpeed(0, 0, 0)
+    # motors.set_powers(0,0,0)

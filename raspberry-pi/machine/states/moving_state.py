@@ -1,8 +1,6 @@
 from machine.state_machine import StateMachine
 from utils.debug import get_logger
 from machine.base_state import BaseState
-import math
-import time
 
 logger = get_logger("states.moving")
 
@@ -10,27 +8,84 @@ logger = get_logger("states.moving")
 class MovingState(BaseState):
     """Stato di movimento del robot"""
 
+    EXPECTED_PERIMETER = 170
+    PERIMETER_TOLERANCE = 0.7
+
+    MAX_RETRIES = 100
+    MAX_LOW_CONFIDENCE = 5
+    TARGET_Y_OFFSET = 60
+    YAW_OFFSET = 10
+    ON_TARGET_COUNT_REQUIRED = 5
+
     def __init__(self, state_machine: "StateMachine", marker: dict):
-        self.updated = False
         self.sm = state_machine
         self.initial_marker = marker
 
         self.target_x = self.sm.robot.FRAME_WIDTH // 2
-        self.target_y = (self.sm.robot.FRAME_HEIGHT // 2) - 70
+        self.target_y = (self.sm.robot.FRAME_HEIGHT // 2) - self.TARGET_Y_OFFSET
 
-        self.marker = marker
-        self.distance = self.marker["distance"]
-        self.roll = self.marker["angles"][0]
-        self.pitch = self.marker["angles"][1]
-        self.yaw = self.marker["angles"][2]
-        self.center_x = self.marker["center"][0]
-        self.center_y = self.marker["center"][1]
+        self._unpack_marker(marker)
+
+        self.updated = False
         self.retries = 0
-        self.is_centered = False
-        self.last_known_center = self.marker["center"]
-        self.last_known_id = self.marker["id"]
-        self.last_known_perimeter = self.marker.get("perimeter")
         self.low_confidence_count = 0
+        self.on_target_count = 0
+
+    def _unpack_marker(self, marker: dict) -> None:
+        self.marker = marker
+        self.center_x = marker["center"][0]
+        self.center_y = marker["center"][1]
+        self.distance = marker["distance"]
+        self.roll = marker["angles"][0]
+        self.pitch = marker["angles"][1]
+        self.yaw = marker["angles"][2]
+
+    def _filter_by_perimeter(self, markers: list) -> list:
+        filtered = []
+        for m in markers:
+            p = m.get("perimeter")
+            if p is not None and abs(p - self.EXPECTED_PERIMETER) / self.EXPECTED_PERIMETER <= self.PERIMETER_TOLERANCE:
+                filtered.append(m)
+            else:
+                logger.info(f"Aruco id={m['id']} scartato per perimetro: {p}")
+        return filtered
+
+    def _compute_velocities(self, error_x: float, error_y: float) -> tuple:
+        # laterale: bang-bang con deadband
+        if abs(error_x) < 25:
+            vx = 0
+        elif error_x > 0:
+            vx = 35
+        else:
+            vx = -35
+
+        # avanti/indietro: proporzionale, clampato
+        vy = max(-50, min(error_y * 0.5, 40))
+
+        # yaw: correggi solo quando circa centrato
+        vr = 0
+        if abs(error_x) < 30 and abs(error_y) < 50:
+            yaw_error = self.yaw + self.YAW_OFFSET
+            if yaw_error > 5:
+                vr = 15
+            elif yaw_error < -5:
+                vr = -15
+
+        return vx, vy, vr
+
+    def _check_on_target(self, error_x: float, error_y: float):
+        yaw_error = self.yaw + self.YAW_OFFSET
+        if abs(error_x) < 30 and abs(error_y) < 40 and abs(yaw_error) < 5:
+            self.on_target_count += 1
+            logger.info(f"On target {self.on_target_count}/{self.ON_TARGET_COUNT_REQUIRED}")
+            if self.on_target_count >= self.ON_TARGET_COUNT_REQUIRED:
+                from .pouring_state import PouringState
+
+                logger.info("Aruco centrato, passo a PouringState")
+                return PouringState(self.sm, self.initial_marker)
+        else:
+            self.on_target_count = 0
+        return None
 
     def enter(self) -> None:
         logger.info("Entering moving state")
@@ -39,156 +94,57 @@ class MovingState(BaseState):
 
     def update_data(self):
         frame = self.sm.robot.camera.get_frame()
-        # res = self.sm.robot.aruco_detector.detect(
-        #     frame,
-        #     last_known_center=self.last_known_center,
-        #     last_known_id=self.last_known_id,
-        #     last_known_perimeter=self.last_known_perimeter,
-        # ) if frame is not None else []
-        res = self.sm.robot.aruco_detector.detect(frame)
+        detections = self.sm.robot.aruco_detector.detect(frame)
 
-        EXPECTED_PERIMETER = 223
-        PERIMETER_TOLERANCE = 0.5  # ±50%
+        if detections:
+            detections = self._filter_by_perimeter(detections)
 
-        if res != []:
-            for m in res:
-                logger.info(f"Aruco id={m['id']} perimeter={m.get('perimeter')}")
-            res = [m for m in res if m.get("perimeter") is not None
-                   and abs(m["perimeter"] - EXPECTED_PERIMETER) / EXPECTED_PERIMETER <= PERIMETER_TOLERANCE]
-
-        if res != []:
-            self.marker = res[0]
-            self.center_x = self.marker["center"][0]
-            self.center_y = self.marker["center"][1]
-            self.last_known_center = self.marker["center"]
-            self.last_known_id = self.marker["id"]
-
-            if self.marker["confidence"] == "full":
-                self.distance = self.marker["distance"]
-                self.roll = self.marker["angles"][0]
-                self.pitch = self.marker["angles"][1]
-                self.yaw = self.marker["angles"][2]
-                self.last_known_perimeter = self.marker["perimeter"]
-                self.low_confidence_count = 0
-            else:
-                self.low_confidence_count += 1
-                if self.low_confidence_count > 5:
-                    self.retries += 1
-                    return
-
-            self.updated = True
-            self.retries = 0
-        else:
+        if not detections:
+            self.sm.robot.motors.stop_motors()
             self.retries += 1
-    
-    def set_is_centered_flag(self):
-        error_x = self.target_x - self.center_x
-        if abs(error_x) >= 50: # pixel di deadzone per considerare l'aruco centrato
-            logger.warning(f"Marker not centered: error_x={error_x}")
-            self.is_centered = False
+            return
 
-    def is_aruco_centered(self, deadzone: int):
-        error_x = self.target_x - self.center_x
-        logger.debug(f"error_x: {error_x}")
-        # con error_X positivo, il marker è a sinistra del centro, con error_X negativo, il marker è a destra del centro
-        if abs(error_x) > deadzone:
-            if error_x > 0:
-                # rotazione anti oraria
-                self.sm.robot.motors.setDirectionAndSpeed(0, 0, -1)
-            else:
-                # rotazione oraria
-                self.sm.robot.motors.setDirectionAndSpeed(0, 0, 1)
-            self.updated = False
-            return False
-        self.is_centered = True
-        return True
+        marker = detections[0]
+        self.center_x = marker["center"][0]
+        self.center_y = marker["center"][1]
 
-    def is_close_to_aruco(self, target_dist: int):
-        if self.distance > target_dist:
-            self.sm.robot.motors.setDirectionAndSpeed(0, 10, 0)
-            self.updated = False
-            return False
-        return True
+        if marker["confidence"] == "full":
+            self._unpack_marker(marker)
+            self.low_confidence_count = 0
+        else:
+            self.low_confidence_count += 1
+            if self.low_confidence_count > self.MAX_LOW_CONFIDENCE:
+                self.retries += 1
+                return
 
-    def is_parallel_to_aruco(self, target_pitch: int):
-
-        # pitch maggiore = aruco rivolto a sinistra
-        # pitch minore = aruco rivolto a destra
-
-        if abs(self.pitch) > target_pitch:
-            if self.pitch > 0:
-                self.sm.robot.motors.setDirectionAndSpeed(-7, 0, 0)
-            else:
-                self.sm.robot.motors.setDirectionAndSpeed(7, 0, 0)
-            self.updated = False
-            return False
-        return True
+        self.updated = True
+        self.retries = 0
 
     def execute(self):
         logger.debug(f"Marker: {self.marker}")
-        # marker:  {'id': 0, 'rvec': array([ x, y, z]), 'tvec': array([x ,  y,  z]), 'distance': 14.322984264396954, 'angles': (np.float64(x), np.float64(y), np.float64(z)), 'center': (x, y)}
+
         if not self.updated:
             self.update_data()
-
-            if self.retries > 3:
-                self.sm.robot.motors.stop_motors()
-            if self.retries > 100:  # numero di frame senza un aruco
+            if self.retries > self.MAX_RETRIES:
                 from .scan_state import ScanState
 
                 logger.error("ARUCO LOST")
                 return ScanState(self.sm)
             return None
-        
-        # self.set_is_centered_flag()
 
-        # # per cambiare priorità delle azioni basta spostarle (es: voglio che prima sia parallelo e poi si avvicina, inverto is_close con is_parallel)
-        # if not self.is_centered:
-        #     if not self.is_aruco_centered(15): #pixel di deadzone per considerare l'aruco centrato
-        #         return None
-
-        # if not self.is_close_to_aruco(30): # distanza in cm per considerare l'aruco abbastanza vicino
-        #     return None
-
-        # if not self.is_parallel_to_aruco(19): # angolo di pitch in gradi per considerare l'aruco abbastanza parallelo
-        #     return None
-
-        # if not self.is_close_to_aruco(19):
-        #     return None
-        error_x = -(self.center_x - self.target_x) # il meno è dovuto al vflip
+        error_x = -(self.center_x - self.target_x)
         error_y = self.center_y - self.target_y
-        # vx = math.copysign(math.sqrt(abs(error_x)), error_x) * 4
-        # vy = math.copysign(math.sqrt(abs(error_y)), error_y) * 2
-        
-        vx = min(error_x * 0.7, 50)
-        vy =  min(error_y * 0.3, 30) 
-        vr =  min(self.yaw * 0.5, 13) 
 
+        vx, vy, vr = self._compute_velocities(error_x, error_y)
+        logger.debug(f"error_x={error_x} error_y={error_y} yaw_error={self.yaw + self.YAW_OFFSET}")
         self.sm.robot.motors.setDirectionAndSpeed(vx, vy, vr)
-        # print("vx",vx,"vy",vy,"vr",vr)
 
-        # if abs(self.yaw) < 3:
-        #     self.sm.robot.motors.setDirectionAndSpeed(vx, vy, 0)
-        # elif self.yaw > 0:
-        #     self.sm.robot.motors.setDirectionAndSpeed(vx-10, vy, 14)
-        # else:
-        #     self.sm.robot.motors.setDirectionAndSpeed(vx+10 , vy , -14)
+        transition = self._check_on_target(error_x, error_y)
+        if transition:
+            return transition
 
         self.updated = False
         return None
-        logger.error("ARRIVATO AL BICCHIERE")
-        self.sm.robot.motors.stop_motors()
-        self.sm.robot.motors.set_pompa_power(255)
-        time.sleep(0.5)
-        self.sm.robot.motors.set_pompa_power(0)
-        # self.sm.robot.motors.setDirectionAndSpeed(0, 50, 0)
-        # time.sleep(0.8)
-        self.sm.robot.motors.stop_motors()
-        logger.error("STO VERSANDO LO SDROGO ....")
-        time.sleep(3)
-
-        from .retreat_state import RetreatState
-
-        return RetreatState(self.sm, self.initial_marker)
 
     def exit(self) -> None:
         logger.info("Exiting moving state")
