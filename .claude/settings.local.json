@@ -12,7 +12,10 @@
       "Bash(cd /mnt/c/Users/Riccardo/Documents/Coding/versy/raspberry-pi/semantic_segmentation/training && pip install -r requirements.txt 2>&1 | tail -5)",
       "Bash(python train_segformer.py --data ../roboflow_dataset --epochs 50 --batch 8 --size 256 2>&1)",
       "Bash(python3 train_segformer.py --data ../roboflow_dataset --epochs 50 --batch 8 --size 256 2>&1)",
-      "Bash(python3 -c \"import cv2; cap = cv2.VideoCapture\\(0\\); print\\('Opened:', cap.isOpened\\(\\)\\); cap.release\\(\\)\" 2>&1)"
+      "Bash(python3 -c \"import cv2; cap = cv2.VideoCapture\\(0\\); print\\('Opened:', cap.isOpened\\(\\)\\); cap.release\\(\\)\" 2>&1)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
