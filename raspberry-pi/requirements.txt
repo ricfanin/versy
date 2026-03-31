@@ -1,0 +1,21 @@
+# Web Framework
+fastapi
+uvicorn
+
+# WebSocket Support
+websockets
+
+# JSON Schema Validation
+pydantic
+
+# Configuration
+pyyaml
+# Logging (optional, but recommended)
+python-json-logger
+
+# Development Dependencies
+# Uncomment if needed for development
+# pytest==7.4.4
+# pytest-asyncio==0.23.3
+# black==24.1.1
+# mypy==1.8.0

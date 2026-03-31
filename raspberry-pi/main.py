@@ -1,35 +1,10 @@
-import time
-
-from machine.state_machine import StateMachine
-from utils.debug import get_logger
-
-logger = get_logger("main")
-
-
-def main():
-    """Entry point to test the robot"""
-    state_machine = None
-    try:
-        logger.info("Initializing robot system")
-        state_machine = StateMachine()
-
-        logger.info("Starting state machine")
-        state_machine.start()
-
-        logger.info("Starting main loop at 20Hz")
-        while state_machine.update():
-            time.sleep(0.05)  # 20Hz update rate
-
-    except KeyboardInterrupt:
-        logger.warning("Shutdown requested by user")
-    except Exception as e:
-        logger.error(f"Fatal error occurred: {e}")
-    finally:
-        logger.info("Cleaning up resources")
-        if state_machine is not None:
-            state_machine.stop()
-        logger.info("Shutdown completed")
-
+import uvicorn
+from src.server import app
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run(
+        app = app,
+        host="0.0.0.0",
+        port=8765,
+        log_level="info"
+    )
