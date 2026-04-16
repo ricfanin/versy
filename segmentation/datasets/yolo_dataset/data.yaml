@@ -1,0 +1,7 @@
+path: /mnt/c/Users/Riccardo/Documents/Coding/versy/raspberry-pi/semantic_segmentation/yolo_dataset
+train: images/train
+val: images/valid
+test: images/test
+
+names:
+  0: table
