@@ -2,6 +2,7 @@ from robot.camera import Camera
 from robot.motors import Motors
 from robot.tofs import Tofs
 from vision.aruco_detect import ArucoDetector
+from vision.table_segmentation import TableSegmentor
 from utils.debug import get_logger
 
 logger = get_logger("robot")
@@ -16,6 +17,7 @@ class Robot:
         self.motors = Motors()
         self.tofs = Tofs()
         self.aruco_detector = ArucoDetector()
+        self.table_segmentor = TableSegmentor()
 
     def get_tof_measures(self):
         try:
