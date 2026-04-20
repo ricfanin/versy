@@ -82,3 +82,6 @@ temp/
 *.tmp
 
 *.onnx
+
+# Captured frames
+no_table_frames/
