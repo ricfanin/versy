@@ -15,8 +15,8 @@ class TableSegmentor:
         self,
         model_path=None,
         input_size=256,
-        conf_threshold=0.2,
-        nms_threshold=0.5,
+        conf_threshold=0.60,
+        nms_threshold=0.1,
         num_threads=4,
     ):
         if model_path is None:
@@ -34,6 +34,8 @@ class TableSegmentor:
         self.input_size = input_size
         self.conf_threshold = conf_threshold
         self.nms_threshold = nms_threshold
+
+        self.last_stats = {}
 
         logger.info(f"TableSegmentor caricato: {model_path}")
 
@@ -59,10 +61,6 @@ class TableSegmentor:
 
         if show:
             self.__draw_debug(frame, mask)
-
-        if np.any(mask):
-            table_pct = (mask > 0).mean() * 100
-            logger.info(f"Tavolo rilevato: {table_pct:.1f}% del frame")
 
         return mask
 
@@ -95,13 +93,26 @@ class TableSegmentor:
         scores = detections[:, 4]
         mask_coeffs = detections[:, 5:]
 
+        n_candidates = len(scores)
+        top5_raw = np.sort(scores)[-5:][::-1]
+
         empty_mask = np.zeros((frame_h, frame_w), dtype=np.uint8)
         keep = scores > self.conf_threshold
         if not np.any(keep):
+            self.last_stats = {
+                "n_candidates": n_candidates,
+                "top5_raw_scores": top5_raw.tolist(),
+                "n_above_conf": 0,
+                "n_after_nms": 0,
+                "kept_scores": [],
+                "table_pct": 0.0,
+            }
             return empty_mask
         boxes = boxes[keep]
         scores = scores[keep]
         mask_coeffs = mask_coeffs[keep]
+
+        n_above_conf = len(scores)
 
         # xywh -> xyxy
         half_w = boxes[:, 2] / 2
@@ -120,8 +131,18 @@ class TableSegmentor:
             self.nms_threshold,
         )
         if len(indices) == 0:
+            self.last_stats = {
+                "n_candidates": n_candidates,
+                "top5_raw_scores": top5_raw.tolist(),
+                "n_above_conf": n_above_conf,
+                "n_after_nms": 0,
+                "kept_scores": [],
+                "table_pct": 0.0,
+            }
             return empty_mask
         indices = np.array(indices).flatten()
+
+        kept_scores = scores[indices]
 
         # ricostruisci maschera combinando i 32 prototipi con i coefficienti
         mask_h, mask_w = prototypes.shape[1], prototypes.shape[2]
@@ -143,6 +164,16 @@ class TableSegmentor:
 
             resized = cv2.resize(cropped, (frame_w, frame_h))
             final_mask[resized > 0.5] = 255
+
+        table_pct = (final_mask > 0).mean() * 100
+        self.last_stats = {
+            "n_candidates": n_candidates,
+            "top5_raw_scores": top5_raw.tolist(),
+            "n_above_conf": n_above_conf,
+            "n_after_nms": len(indices),
+            "kept_scores": kept_scores.tolist(),
+            "table_pct": table_pct,
+        }
 
         return final_mask
 

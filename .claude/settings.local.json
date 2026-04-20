@@ -20,7 +20,9 @@
       "Bash(grep -rh \"^import\\\\|^from\" /home/versy/versy/segmentation/*.py)",
       "Bash(grep:*)",
       "Bash(du:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(sudo fuser *)",
+      "Bash(kill *)"
     ]
   },
   "enableAllProjectMcpServers": true,
