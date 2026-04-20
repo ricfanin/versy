@@ -2,18 +2,46 @@ package com.example.versy_app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val BackgroundDark = Color(0xFF0B0F14)
-val SurfaceDark = Color(0xFF141A22)
-val SurfaceElevated = Color(0xFF1C2430)
-val OutlineDark = Color(0xFF2A3440)
+val BackgroundDark = Color(0xFF0E1116)
+val SurfaceDark = Color(0xFF161A21)
+val SurfaceElevatedDark = Color(0xFF1D2229)
+val OutlineDark = Color(0xFF2C333D)
 
-val PrimaryTeal = Color(0xFF00E5C8)
-val PrimaryTealDim = Color(0xFF00B8A0)
-val SecondaryMagenta = Color(0xFFFF4D8D)
-val AccentAmber = Color(0xFFFFC857)
+val PrimarySkyDark = Color(0xFF7DD3FC)
+val PrimarySkyDarkDim = Color(0xFF38BDF8)
+val OnPrimaryDark = Color(0xFF0B2942)
 
-val TextPrimary = Color(0xFFE6EDF3)
-val TextSecondary = Color(0xFF9BA8B6)
+val SecondaryLilacDark = Color(0xFFA78BFA)
+val OnSecondaryDark = Color(0xFF2A1065)
 
-val SuccessGreen = Color(0xFF3DDC84)
-val DangerRed = Color(0xFFFF4E4E)
+val TertiaryAmberDark = Color(0xFFFBBF24)
+val OnTertiaryDark = Color(0xFF3D2A00)
+
+val SuccessGreenDark = Color(0xFF4ADE80)
+val WarningAmberDark = Color(0xFFFBBF24)
+val DangerRedDark = Color(0xFFF87171)
+
+val TextPrimaryDark = Color(0xFFE8ECF1)
+val TextSecondaryDark = Color(0xFF94A3B8)
+
+val BackgroundLight = Color(0xFFF5F7FA)
+val SurfaceLight = Color(0xFFFFFFFF)
+val SurfaceElevatedLight = Color(0xFFEEF2F7)
+val OutlineLight = Color(0xFFCBD5E1)
+
+val PrimarySkyLight = Color(0xFF0284C7)
+val PrimarySkyLightDim = Color(0xFF0369A1)
+val OnPrimaryLight = Color(0xFFFFFFFF)
+
+val SecondaryLilacLight = Color(0xFF7C3AED)
+val OnSecondaryLight = Color(0xFFFFFFFF)
+
+val TertiaryAmberLight = Color(0xFFD97706)
+val OnTertiaryLight = Color(0xFFFFFFFF)
+
+val SuccessGreenLight = Color(0xFF16A34A)
+val WarningAmberLight = Color(0xFFD97706)
+val DangerRedLight = Color(0xFFDC2626)
+
+val TextPrimaryLight = Color(0xFF0F172A)
+val TextSecondaryLight = Color(0xFF475569)

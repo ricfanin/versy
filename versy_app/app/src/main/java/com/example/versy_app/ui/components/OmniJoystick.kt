@@ -28,10 +28,10 @@ import kotlin.math.hypot
 import kotlin.math.min
 
 @Composable
-fun Joystick(
+fun OmniJoystick(
     modifier: Modifier = Modifier,
-    size: Dp = 260.dp,
-    onMove: (x: Float, y: Float) -> Unit,
+    size: Dp = 240.dp,
+    onMove: (vx: Float, vy: Float) -> Unit,
     onRelease: () -> Unit
 ) {
     var dragging by remember { mutableStateOf(false) }
@@ -40,12 +40,12 @@ fun Joystick(
     val animatedX by animateFloatAsState(
         targetValue = if (dragging) rawOffset.x else 0f,
         animationSpec = tween(durationMillis = if (dragging) 0 else 220),
-        label = "joystickX"
+        label = "omniX"
     )
     val animatedY by animateFloatAsState(
         targetValue = if (dragging) rawOffset.y else 0f,
         animationSpec = tween(durationMillis = if (dragging) 0 else 220),
-        label = "joystickY"
+        label = "omniY"
     )
 
     val primary = MaterialTheme.colorScheme.primary
@@ -55,7 +55,7 @@ fun Joystick(
 
     val density = LocalDensity.current
     val sizePx = with(density) { size.toPx() }
-    val stickRadiusPx = sizePx * 0.32f / 2f
+    val stickRadiusPx = sizePx * 0.30f / 2f
     val maxDrag = sizePx / 2f - stickRadiusPx
 
     Box(
@@ -66,11 +66,11 @@ fun Joystick(
                     val down = awaitFirstDown(requireUnconsumed = false)
                     dragging = true
                     val center = Offset(this.size.width / 2f, this.size.height / 2f)
-                    val clampedDown = clampToCircle(down.position - center, maxDrag)
-                    rawOffset = clampedDown
+                    val clamped = clampToCircle(down.position - center, maxDrag)
+                    rawOffset = clamped
                     onMove(
-                        (clampedDown.x / maxDrag).coerceIn(-1f, 1f),
-                        (-clampedDown.y / maxDrag).coerceIn(-1f, 1f)
+                        (clamped.x / maxDrag).coerceIn(-1f, 1f),
+                        (-clamped.y / maxDrag).coerceIn(-1f, 1f)
                     )
                     while (true) {
                         val event = awaitPointerEvent()
@@ -82,11 +82,12 @@ fun Joystick(
                             onRelease()
                             break
                         }
-                        val clamped = clampToCircle(change.position - center, maxDrag)
-                        rawOffset = clamped
-                        val nx = (clamped.x / maxDrag).coerceIn(-1f, 1f)
-                        val ny = (-clamped.y / maxDrag).coerceIn(-1f, 1f)
-                        onMove(nx, ny)
+                        val moved = clampToCircle(change.position - center, maxDrag)
+                        rawOffset = moved
+                        onMove(
+                            (moved.x / maxDrag).coerceIn(-1f, 1f),
+                            (-moved.y / maxDrag).coerceIn(-1f, 1f)
+                        )
                         change.consume()
                     }
                 }
@@ -96,7 +97,7 @@ fun Joystick(
         Canvas(modifier = Modifier.size(size)) {
             val center = Offset(this.size.width / 2f, this.size.height / 2f)
             val r = min(this.size.width, this.size.height) / 2f
-            val stickR = r * 0.32f
+            val stickR = r * 0.30f
 
             drawCircle(
                 brush = Brush.radialGradient(
@@ -114,21 +115,21 @@ fun Joystick(
                 style = Stroke(width = 3f)
             )
             drawCircle(
-                color = primary.copy(alpha = 0.12f),
+                color = primary.copy(alpha = 0.14f),
                 radius = r * 0.55f,
                 center = center,
                 style = Stroke(width = 2f, cap = StrokeCap.Round)
             )
             drawLine(
-                color = outline.copy(alpha = 0.4f),
-                start = Offset(center.x - r * 0.55f, center.y),
-                end = Offset(center.x + r * 0.55f, center.y),
+                color = outline.copy(alpha = 0.45f),
+                start = Offset(center.x - r * 0.6f, center.y),
+                end = Offset(center.x + r * 0.6f, center.y),
                 strokeWidth = 1.5f
             )
             drawLine(
-                color = outline.copy(alpha = 0.4f),
-                start = Offset(center.x, center.y - r * 0.55f),
-                end = Offset(center.x, center.y + r * 0.55f),
+                color = outline.copy(alpha = 0.45f),
+                start = Offset(center.x, center.y - r * 0.6f),
+                end = Offset(center.x, center.y + r * 0.6f),
                 strokeWidth = 1.5f
             )
 
@@ -136,7 +137,7 @@ fun Joystick(
 
             if (dragging) {
                 drawCircle(
-                    color = primary.copy(alpha = 0.25f),
+                    color = primary.copy(alpha = 0.22f),
                     radius = stickR * 1.6f,
                     center = stickCenter
                 )
@@ -151,8 +152,8 @@ fun Joystick(
                 center = stickCenter
             )
             drawCircle(
-                color = Color.White.copy(alpha = 0.25f),
-                radius = stickR * 0.55f,
+                color = Color.White.copy(alpha = 0.22f),
+                radius = stickR * 0.52f,
                 center = Offset(stickCenter.x - stickR * 0.25f, stickCenter.y - stickR * 0.25f)
             )
         }

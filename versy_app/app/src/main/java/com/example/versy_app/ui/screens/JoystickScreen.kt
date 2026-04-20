@@ -1,5 +1,7 @@
 package com.example.versy_app.ui.screens
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,39 +9,45 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.LocalBar
 import androidx.compose.material.icons.rounded.Stop
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.versy_app.data.ConnectionState
-import com.example.versy_app.ui.components.Joystick
-import com.example.versy_app.ui.theme.DangerRed
+import com.example.versy_app.ui.components.MinimalConnectionBar
+import com.example.versy_app.ui.components.OmniJoystick
+import com.example.versy_app.ui.components.QuickPourSheet
+import com.example.versy_app.ui.components.YawDial
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.sample
 import kotlin.math.abs
@@ -48,153 +56,238 @@ import kotlin.math.abs
 @Composable
 fun JoystickScreen(
     connectionState: ConnectionState,
-    onMove: (Float, Float) -> Unit,
+    onMove: (vx: Float, vy: Float, omega: Float) -> Unit,
     onStop: () -> Unit,
+    onQuickPour: (ml: Int) -> Unit,
+    onOpenConnection: () -> Unit,
+    onBackToPour: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var jx by remember { mutableFloatStateOf(0f) }
-    var jy by remember { mutableFloatStateOf(0f) }
+    ForceLandscape()
+
+    var vx by remember { mutableFloatStateOf(0f) }
+    var vy by remember { mutableFloatStateOf(0f) }
+    var omega by remember { mutableFloatStateOf(0f) }
+    var showPourSheet by remember { mutableStateOf(false) }
 
     val isConnected = connectionState == ConnectionState.Connected
 
     LaunchedEffect(isConnected) {
         if (!isConnected) return@LaunchedEffect
-        val xFlow = snapshotFlow { jx }
-        val yFlow = snapshotFlow { jy }
-        xFlow.combine(yFlow) { x, y -> x to y }
+        snapshotFlow { Triple(vx, vy, omega) }
             .sample(100)
             .distinctUntilChanged()
-            .collect { (x, y) ->
-                if (abs(x) > 0.001f || abs(y) > 0.001f) {
-                    onMove(x, y)
+            .collect { (x, y, w) ->
+                if (abs(x) > 0.001f || abs(y) > 0.001f || abs(w) > 0.001f) {
+                    onMove(x, y, w)
                 }
             }
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .safeDrawingPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        Column {
-            Text(
-                text = "Pilota",
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "Trascina per muovere il robot, rilascia per fermarlo",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        MinimalConnectionBar(
+            state = connectionState,
+            onClick = onOpenConnection,
+            modifier = Modifier.align(Alignment.TopStart),
+            compact = true
+        )
 
-        AxisIndicators(x = jx, y = jy)
+        BackToPourButton(
+            onClick = onBackToPour,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            Joystick(
-                onMove = { x, y ->
-                    jx = x
-                    jy = y
-                },
-                onRelease = {
-                    jx = 0f
-                    jy = 0f
-                    onStop()
-                }
-            )
-        }
+        StickPanel(
+            labelLine1 = "VX %+.2f".format(vx),
+            labelLine2 = "VY %+.2f".format(vy),
+            alignEnd = false,
+            modifier = Modifier.align(Alignment.CenterStart),
+            control = {
+                OmniJoystick(
+                    size = 220.dp,
+                    onMove = { nx, ny ->
+                        vx = nx
+                        vy = ny
+                    },
+                    onRelease = {
+                        vx = 0f
+                        vy = 0f
+                        if (abs(omega) < 0.001f) onStop()
+                    }
+                )
+            }
+        )
 
-        Button(
-            onClick = {
-                jx = 0f; jy = 0f
+        StickPanel(
+            labelLine1 = "YAW \u03C9 %+.2f".format(omega),
+            labelLine2 = "",
+            alignEnd = true,
+            modifier = Modifier.align(Alignment.CenterEnd),
+            control = {
+                YawDial(
+                    diameter = 220.dp,
+                    onChange = { omega = it },
+                    onRelease = {
+                        omega = 0f
+                        if (abs(vx) < 0.001f && abs(vy) < 0.001f) onStop()
+                    }
+                )
+            }
+        )
+
+        ActionButtonStack(
+            onVersa = { showPourSheet = true },
+            onStop = {
+                vx = 0f; vy = 0f; omega = 0f
                 onStop()
             },
-            enabled = isConnected,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = DangerRed,
-                contentColor = Color.White,
-                disabledContainerColor = DangerRed.copy(alpha = 0.3f)
-            )
-        ) {
-            Icon(Icons.Rounded.Stop, contentDescription = null)
-            Spacer(Modifier.width(10.dp))
-            Text("STOP EMERGENZA", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        }
+            isConnected = isConnected,
+            modifier = Modifier.align(Alignment.Center)
+        )
 
         if (!isConnected) {
             Text(
-                "Connettiti al robot per inviare comandi",
+                text = "Connettiti al robot per pilotare",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
-}
 
-@Composable
-private fun AxisIndicators(x: Float, y: Float) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        AxisBar(label = "X", value = x, modifier = Modifier.weight(1f))
-        AxisBar(label = "Y", value = y, modifier = Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun AxisBar(label: String, value: Float, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(
-                Brush.horizontalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.surface,
-                        MaterialTheme.colorScheme.surfaceVariant
-                    )
-                )
-            )
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "%+.2f".format(value),
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        LinearProgressIndicator(
-            progress = { ((value + 1f) / 2f).coerceIn(0f, 1f) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+    if (showPourSheet) {
+        QuickPourSheet(
+            onConfirm = { ml ->
+                onQuickPour(ml)
+                showPourSheet = false
+            },
+            onDismiss = { showPourSheet = false }
         )
+    }
+}
+
+@Composable
+private fun ActionButtonStack(
+    onVersa: () -> Unit,
+    onStop: () -> Unit,
+    isConnected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        IconButton(
+            onClick = onVersa,
+            enabled = isConnected,
+            modifier = Modifier
+                .size(88.dp)
+                .clip(CircleShape),
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.LocalBar,
+                contentDescription = "Versa manuale",
+                modifier = Modifier.size(40.dp)
+            )
+        }
+        IconButton(
+            onClick = onStop,
+            modifier = Modifier
+                .size(88.dp)
+                .clip(CircleShape),
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Stop,
+                contentDescription = "Stop emergenza",
+                modifier = Modifier.size(40.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun BackToPourButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = modifier.height(44.dp),
+        shape = RoundedCornerShape(22.dp)
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "Indietro",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 14.sp
+        )
+    }
+}
+
+@Composable
+private fun StickPanel(
+    labelLine1: String,
+    labelLine2: String,
+    alignEnd: Boolean,
+    modifier: Modifier = Modifier,
+    control: @Composable () -> Unit
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row {
+            Text(
+                text = labelLine1,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 13.sp
+            )
+            if (labelLine2.isNotEmpty()) {
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = labelLine2,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 13.sp
+                )
+            }
+        }
+        control()
+    }
+}
+
+@Composable
+private fun ForceLandscape() {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        val previous = activity?.requestedOrientation
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        onDispose {
+            activity?.requestedOrientation = previous ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
     }
 }

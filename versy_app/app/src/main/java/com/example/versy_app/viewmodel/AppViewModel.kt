@@ -82,12 +82,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         socket.disconnect()
     }
 
-    fun sendMove(x: Float, y: Float) {
-        socket.send(MoveMessage(x, y))
+    fun sendMove(vx: Float, vy: Float, omega: Float) {
+        socket.send(MoveMessage(vx, vy, omega))
     }
 
     fun sendStop() {
         socket.send(StopMessage)
+    }
+
+    fun sendQuickPour(ml: Int) {
+        socket.send(PourMessage(ml))
     }
 
     fun sendFindAndPour(markerId: Int, ml: Int) {

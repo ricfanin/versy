@@ -1,7 +1,11 @@
 package com.example.versy_app.ui.navigation
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Gamepad
 import androidx.compose.material.icons.rounded.LocalDrink
@@ -17,8 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -27,8 +33,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.versy_app.data.ConnectionState
-import com.example.versy_app.ui.components.ConnectionBar
-import com.example.versy_app.ui.components.ConnectionDialog
+import com.example.versy_app.ui.components.MinimalConnectionBar
+import com.example.versy_app.ui.components.SettingsBottomSheet
 import com.example.versy_app.ui.screens.JoystickScreen
 import com.example.versy_app.ui.screens.PourScreen
 import com.example.versy_app.viewmodel.AppViewModel
@@ -48,22 +54,33 @@ fun AppNavigation(
     val lastAruco by viewModel.lastAruco.collectAsStateWithLifecycle()
     val pourStatus by viewModel.pourStatus.collectAsStateWithLifecycle()
 
-    var showDialog by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val isJoystickRoute = currentEntry?.destination?.route == Route.Joystick.path
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            ConnectionBar(
-                state = connectionState,
-                address = address,
-                onToggleConnect = {
-                    if (connectionState == ConnectionState.Connected) viewModel.disconnect()
-                    else viewModel.connect()
-                },
-                onOpenSettings = { showDialog = true }
-            )
+            if (!isJoystickRoute) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MinimalConnectionBar(
+                        state = connectionState,
+                        onClick = { showSettings = true }
+                    )
+                }
+            }
         },
-        bottomBar = { VersyBottomBar(navController) }
+        bottomBar = {
+            if (!isJoystickRoute) VersyBottomBar(navController)
+        }
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -77,27 +94,46 @@ fun AppNavigation(
                     connectionState = connectionState,
                     lastAruco = lastAruco,
                     pourStatus = pourStatus,
-                    onFindAndPour = viewModel::sendFindAndPour
+                    onFindAndPour = viewModel::sendFindAndPour,
+                    onOpenSettings = { showSettings = true },
+                    onNavigateToJoystick = {
+                        navController.navigate(Route.Joystick.path) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
             composable(Route.Joystick.path) {
                 JoystickScreen(
                     connectionState = connectionState,
                     onMove = viewModel::sendMove,
-                    onStop = viewModel::sendStop
+                    onStop = viewModel::sendStop,
+                    onQuickPour = viewModel::sendQuickPour,
+                    onOpenConnection = { showSettings = true },
+                    onBackToPour = {
+                        navController.navigate(Route.Pour.path) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
         }
     }
 
-    if (showDialog) {
-        ConnectionDialog(
-            currentAddress = address,
-            onConfirm = {
-                viewModel.updateAddress(it)
-                showDialog = false
+    if (showSettings) {
+        SettingsBottomSheet(
+            state = connectionState,
+            address = address,
+            onAddressChange = viewModel::updateAddress,
+            onToggleConnect = {
+                if (connectionState == ConnectionState.Connected) viewModel.disconnect()
+                else viewModel.connect()
             },
-            onDismiss = { showDialog = false }
+            onDismiss = { showSettings = false }
         )
     }
 }
@@ -135,4 +171,3 @@ private fun VersyBottomBar(navController: NavHostController) {
         }
     }
 }
-

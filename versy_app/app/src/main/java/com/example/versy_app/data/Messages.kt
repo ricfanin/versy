@@ -6,11 +6,12 @@ sealed interface OutboundMessage {
     fun toJson(): String
 }
 
-data class MoveMessage(val x: Float, val y: Float) : OutboundMessage {
+data class MoveMessage(val vx: Float, val vy: Float, val omega: Float) : OutboundMessage {
     override fun toJson(): String = JSONObject()
         .put("type", "move")
-        .put("x", x.toDouble())
-        .put("y", y.toDouble())
+        .put("vx", vx.toDouble())
+        .put("vy", vy.toDouble())
+        .put("omega", omega.toDouble())
         .toString()
 }
 

@@ -10,8 +10,9 @@ class BaseMessage(BaseModel):
 
 class MoveMessage(BaseMessage):
     type: Literal["move"] = "move"
-    x: float
-    y: float
+    vx: float
+    vy: float
+    omega: float
 
 class StopMessage(BaseMessage):
     type: Literal["stop"] = "stop"
