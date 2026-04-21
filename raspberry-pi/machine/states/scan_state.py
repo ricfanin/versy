@@ -13,8 +13,9 @@ SCAN_AND_THRESHOLD_PX = 10
 
 
 class ScanState(BaseState):
-    def __init__(self, state_machine):
+    def __init__(self, state_machine, marker_id):
         self.sm = state_machine
+        self.id = marker_id
         self.debug = False
 
     def enter(self):
@@ -27,7 +28,7 @@ class ScanState(BaseState):
             return None
 
         res = self.sm.robot.aruco_detector.detect(frame)
-        if res != [] and res[0]["id"] == 0:
+        if res != [] and res[0]["id"] == self.id:
             self.sm.robot.motors.stop_motors()
             logger.debug(f"ArUco markers detected: {len(res)} markers found")
             from .moving_state import MovingState

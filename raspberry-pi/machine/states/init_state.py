@@ -26,9 +26,7 @@ class InitState(BaseState):
             logger.error("ToF test failed, retrying")
             return None
         logger.info("Initialization complete - camera, motors and ToF OK")
-        from .scan_state import ScanState
-
-        return ScanState(self.sm)
+        return None
 
     def exit(self):
         logger.info("Exiting initialization state")

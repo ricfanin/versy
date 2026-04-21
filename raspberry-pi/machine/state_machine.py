@@ -29,14 +29,14 @@ class StateMachine:
             next_state = self.current_state.execute()
 
             if next_state and next_state != self.current_state:
-                self._transition_to(next_state)
+                self.transition_to(next_state)
 
         except Exception as e:
             logger.error(f"Error in state {type(self.current_state).__name__}: {e}")
         finally:
             return True
 
-    def _transition_to(self, new_state: BaseState):
+    def transition_to(self, new_state: BaseState):
         """Handle the transition between states"""
         logger.info(
             f"State transition: {type(self.current_state).__name__} -> {type(new_state).__name__}"
