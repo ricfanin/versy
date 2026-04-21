@@ -1,5 +1,5 @@
-from src.utils.messages import ArucoFindMessage, ArucoFoundMessage, ErrorMessage
-from src.interfaces.aruco_interface import search_aruco
+from websocket.utils.messages import ArucoFindMessage, ArucoFoundMessage, ErrorMessage
+from websocket.interfaces.aruco_interface import search_aruco
 from pydantic import TypeAdapter
 
 

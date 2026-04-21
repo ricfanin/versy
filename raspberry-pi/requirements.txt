@@ -13,6 +13,11 @@ pyyaml
 # Logging (optional, but recommended)
 python-json-logger
 
+# Computer Vision
+onnxruntime
+numpy
+opencv-python
+
 # Development Dependencies
 # Uncomment if needed for development
 # pytest==7.4.4

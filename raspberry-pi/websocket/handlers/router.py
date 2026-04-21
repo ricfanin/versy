@@ -1,6 +1,6 @@
-from src.utils.messages import BaseMessage, ArucoFindMessage, MoveMessage, StopMessage, PourMessage
-from src.handlers.aruco_handler import aruco_handler
-from src.handlers.action_handler import move_handler, stop_handler, pour_handler
+from websocket.utils.messages import BaseMessage, ArucoFindMessage, MoveMessage, StopMessage, PourMessage
+from websocket.handlers.aruco_handler import aruco_handler
+from websocket.handlers.action_handler import move_handler, stop_handler, pour_handler
 
 def handle_message(message: BaseMessage):
     match message:

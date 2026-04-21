@@ -15,7 +15,14 @@
       "Bash(python3 -c \"import cv2; cap = cv2.VideoCapture\\(0\\); print\\('Opened:', cap.isOpened\\(\\)\\); cap.release\\(\\)\" 2>&1)",
       "Bash(git pull:*)",
       "Bash(git add:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(file:*)",
+      "Bash(grep -rh \"^import\\\\|^from\" /home/versy/versy/segmentation/*.py)",
+      "Bash(grep:*)",
+      "Bash(du:*)",
+      "Bash(python3:*)",
+      "Bash(sudo fuser *)",
+      "Bash(kill *)"
     ]
   },
   "enableAllProjectMcpServers": true,

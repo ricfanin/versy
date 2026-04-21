@@ -1,5 +1,5 @@
 import uvicorn
-from src.server import app
+from websocket.server import app
 
 if __name__ == "__main__":
     uvicorn.run(

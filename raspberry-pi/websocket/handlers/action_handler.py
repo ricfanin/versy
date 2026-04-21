@@ -1,8 +1,9 @@
-from src.utils.messages import PourMessage, MoveMessage, StopMessage, BaseMessage, ErrorMessage, PourCompleteMessage
+from websocket.utils.messages import PourMessage, MoveMessage, StopMessage, BaseMessage, ErrorMessage, PourCompleteMessage
+from websocket.interfaces.motor_interface import move as motor_move, stop as motor_stop
 
 def move_handler(msg: MoveMessage):
     try:
-        # interfaccia per movimento
+        motor_move(msg.x, msg.y)
         response = BaseMessage(type="move_complete")
     except Exception as e:
         response = ErrorMessage(
@@ -14,7 +15,7 @@ def move_handler(msg: MoveMessage):
 
 def stop_handler(msg: StopMessage):
     try:
-        # interfaccia per stop
+        motor_stop()
         response = BaseMessage(type="stop_complete")
     except Exception as e:
         response = ErrorMessage(
