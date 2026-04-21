@@ -11,7 +11,7 @@ class Router:
     def handle_message(self, message: BaseMessage):
         match message:
             case ArucoFindMessage():
-                return aruco_handler(message, sm)
+                return aruco_handler(message, self.sm)
             case MoveMessage():
                 return move_handler(message)
             case StopMessage():
