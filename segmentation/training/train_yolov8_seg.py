@@ -27,23 +27,35 @@ def train(args):
         project="runs/segment",
         name="table_seg",
         exist_ok=True,
+        # riproducibilità
+        seed=42,
+        deterministic=True,
+        # performance
+        cache="ram",
         # early stopping
         patience=20,
-        # learning rate
-        lr0=0.01,
+        # learning rate / optimizer (fine-tune da pesi COCO)
+        optimizer="AdamW",
+        lr0=0.003,
         lrf=0.01,
+        cos_lr=True,
         warmup_epochs=5,
-        # augmentation
-        hsv_h=0.015,
-        hsv_s=0.5,
-        hsv_v=0.3,
-        degrees=10.0,
-        translate=0.1,
-        scale=0.3,
-        fliplr=0.5,
-        mosaic=1.0,
-        mixup=0.1,
-        copy_paste=0.1,
+        # augmentation disabled (handled upstream in Roboflow dataset generation)
+        hsv_h=0.0,
+        hsv_s=0.0,
+        hsv_v=0.0,
+        degrees=0.0,
+        translate=0.0,
+        scale=0.0,
+        shear=0.0,
+        perspective=0.0,
+        flipud=0.0,
+        fliplr=0.0,
+        mosaic=0.0,
+        mixup=0.0,
+        copy_paste=0.0,
+        erasing=0.0,
+        bgr=0.0,
         # salvataggio e validazione
         save=True,
         save_period=10,
@@ -97,7 +109,7 @@ def main():
     parser.add_argument("--output", default="../models/trained", help="Cartella output modelli")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch", type=int, default=16)
-    parser.add_argument("--size", type=int, default=256, help="Dimensione immagine")
+    parser.add_argument("--size", type=int, default=320, help="Dimensione immagine")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--device", default="", help="Device per il training (es. 'cpu', '0')")
     parser.add_argument("--export", type=str, default=None, help="Path .pt da esportare (skip training)")
