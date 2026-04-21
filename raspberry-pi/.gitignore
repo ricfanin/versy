@@ -82,6 +82,7 @@ temp/
 *.tmp
 
 *.onnx
+!vision/models/table_seg.onnx
 
 # Captured frames
 no_table_frames/
