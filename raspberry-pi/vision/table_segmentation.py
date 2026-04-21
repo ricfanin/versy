@@ -15,8 +15,8 @@ class TableSegmentor:
         self,
         model_path=None,
         input_size=256,
-        conf_threshold=0.60,
-        nms_threshold=0.1,
+        conf_threshold=0.6,
+        nms_threshold=0.04,
         num_threads=4,
     ):
         if model_path is None:

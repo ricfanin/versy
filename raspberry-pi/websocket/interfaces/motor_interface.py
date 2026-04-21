@@ -3,8 +3,8 @@ from robot.motors import Motors
 _motors = Motors()
 
 
-def move(x: float, y: float) -> None:
-    _motors.setDirectionAndSpeed(vx=x * 100, vy=y * 100)
+def move(vx: float, vy: float, omega: float) -> None:
+    _motors.setDirectionAndSpeed(vx=vx * 100, vy=vy * 100, vang=omega * 100)
 
 
 def stop() -> None:

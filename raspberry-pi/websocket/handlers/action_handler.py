@@ -3,7 +3,7 @@ from websocket.interfaces.motor_interface import move as motor_move, stop as mot
 
 def move_handler(msg: MoveMessage):
     try:
-        motor_move(msg.x, msg.y)
+        motor_move(msg.vx, msg.vy, msg.omega)
         response = BaseMessage(type="move_complete")
     except Exception as e:
         response = ErrorMessage(

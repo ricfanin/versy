@@ -4,9 +4,11 @@ import sys
 from machine.state_machine import StateMachine
 from machine.states.scan_state import ScanState
 
+marker_id = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+
 sm = StateMachine()
 sm.robot.camera.start()
-scan_state = ScanState(sm)
+scan_state = ScanState(sm, marker_id)
 scan_state.debug = True
 sm.current_state = scan_state
 sm.start()
