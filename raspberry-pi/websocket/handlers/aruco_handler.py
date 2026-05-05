@@ -11,7 +11,7 @@ def aruco_handler(msg: ArucoFindMessage, sm: StateMachine):
     try:
         sm.transition_to(ScanState(sm, msg.marker_id))
         while sm.current_state != MovingState:
-            time.sleep(0.1)  # evita busy waiting (speriamo)
+            sleep(0.1)  # evita busy waiting (speriamo)
         response = ArucoFoundMessage(
             marker_id=msg.marker_id,
         )
