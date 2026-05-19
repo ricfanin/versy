@@ -48,9 +48,13 @@ class ArucoDetector:
         self.pitch_history = []
         self.PITCH_BUFFER_SIZE = 10
 
-    def detect(self, frame, show=True, last_known_center=None, last_known_id=None, last_known_perimeter=None):
+    def detect(self, frame, show=True, expected_ids=None, expected_perimeter=None, perimeter_tolerance=None, last_known_center=None, last_known_id=None, last_known_perimeter=None):
         """restituisce array di markers rilevati fonendo:
-        id, rvc, tvec, distance, roll, pitch, yaw, center, confidence"""
+        id, rvc, tvec, distance, roll, pitch, yaw, center, confidence.
+        Se expected_ids e' fornito (iterable di int), filtra sia i risultati
+        sia il disegno di debug ai soli marker con quegli ID.
+        Se expected_perimeter e perimeter_tolerance sono forniti, scarta i
+        marker il cui perimetro si discosta oltre la tolleranza relativa."""
         h = frame.shape[0]
         pframe = self.__preprocess(frame)
         try:
@@ -58,6 +62,7 @@ class ArucoDetector:
         except cv2.error:
             logger.warning("ArUco detectMarkers failed (contour interpolation), skipping frame")
             return []
+        expected_set = set(expected_ids) if expected_ids is not None else None
         results = []
         if ids is not None:
             # Punti 3D del marker (ordine: TL, TR, BR, BL)
@@ -98,6 +103,8 @@ class ArucoDetector:
                 corners_display.append(cd)
 
             for i, marker_id in enumerate(ids):
+                if expected_set is not None and int(marker_id[0]) not in expected_set:
+                    continue
                 marker_data = self.__process_marker_data(
                     i,
                     marker_id[0],
@@ -106,6 +113,11 @@ class ArucoDetector:
                     tvecs[i],
                     h,
                 )
+                if expected_perimeter is not None and perimeter_tolerance is not None:
+                    p = marker_data["perimeter"]
+                    if abs(p - expected_perimeter) / expected_perimeter > perimeter_tolerance:
+                        logger.info(f"Aruco id={marker_data['id']} scartato per perimetro: {p}")
+                        continue
                 marker_data["confidence"] = "full"
                 results.append(marker_data)
 

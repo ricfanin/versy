@@ -48,6 +48,11 @@ class ArucoFoundMessage(BaseMessage):
     marker_id: int
 
 
+class ArucoLostMessage(BaseMessage):
+    type: Literal["aruco_lost"] = "aruco_lost"  # type: ignore[override]
+    marker_id: int
+
+
 class PourCompleteMessage(BaseMessage):
     type: Literal["pour_complete"] = "pour_complete"  # type: ignore[override]
     ml_poured: float
@@ -65,6 +70,6 @@ IncomingMessages = Annotated[
 ]
 
 OutgoingMessages = Annotated[
-    Union[StatusMessage, ArucoFoundMessage, PourCompleteMessage, ErrorMessage],
+    Union[StatusMessage, ArucoFoundMessage, ArucoLostMessage, PourCompleteMessage, ErrorMessage],
     Field(discriminator="type"),
 ]

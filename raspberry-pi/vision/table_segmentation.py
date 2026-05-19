@@ -15,8 +15,10 @@ class TableSegmentor:
         self,
         model_path=None,
         input_size=256,
-        conf_threshold=0.6,
+        conf_threshold=0.4,
         nms_threshold=0.04,
+        mask_threshold=0.4,
+        erode_px=1,
         num_threads=4,
     ):
         if model_path is None:
@@ -34,6 +36,8 @@ class TableSegmentor:
         self.input_size = input_size
         self.conf_threshold = conf_threshold
         self.nms_threshold = nms_threshold
+        self.mask_threshold = mask_threshold
+        self.erode_px = erode_px
 
         self.last_stats = {}
 
@@ -163,7 +167,12 @@ class TableSegmentor:
             cropped[by1:by2, bx1:bx2] = raw[by1:by2, bx1:bx2]
 
             resized = cv2.resize(cropped, (frame_w, frame_h))
-            final_mask[resized > 0.5] = 255
+            final_mask[resized > self.mask_threshold] = 255
+
+        if self.erode_px > 0:
+            k = 2 * self.erode_px + 1
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+            final_mask = cv2.erode(final_mask, kernel, iterations=1)
 
         table_pct = (final_mask > 0).mean() * 100
         self.last_stats = {

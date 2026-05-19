@@ -1,7 +1,10 @@
+from typing import Callable
+
 from .base_state import BaseState
 from .states.init_state import InitState
 from robot.robot import Robot
 from utils.debug import get_logger
+from websocket.utils.messages import BaseMessage
 
 logger = get_logger("state_machine")
 
@@ -13,6 +16,10 @@ class StateMachine:
         # State machine properties
         self.current_state: BaseState = InitState(self)
         self.running = False
+        self.publisher: Callable[[BaseMessage], None] = lambda msg: None
+
+    def publish(self, message: BaseMessage) -> None:
+        self.publisher(message)
 
     def start(self):
         """Start the state machine"""

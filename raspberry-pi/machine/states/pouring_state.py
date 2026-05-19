@@ -5,7 +5,7 @@ import time
 
 logger = get_logger("states.pouring")
 
-POUR_DISTANCE_MM = 100
+POUR_DISTANCE_MM = 90
 FORWARD_SPEED = 26
 
 
@@ -33,7 +33,9 @@ class PouringState(BaseState):
             # self.sm.robot.motors.set_pompa_power(0)
 
             from .retreat_state import RetreatState
+            from websocket.utils.messages import PourCompleteMessage
 
+            self.sm.publish(PourCompleteMessage(ml_poured=30))
             return RetreatState(self.sm, self.initial_marker)
 
         self.sm.robot.motors.setDirectionAndSpeed(0, FORWARD_SPEED, 0)
