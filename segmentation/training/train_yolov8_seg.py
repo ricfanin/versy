@@ -3,8 +3,8 @@ Script per il training di YOLOv8n-seg su dataset di table segmentation
 ed export del modello in formato ONNX.
 
 Uso:
-    python train_yolov8_seg.py --data ../yolo_dataset/data.yaml --epochs 100
-    python train_yolov8_seg.py --export best.pt --size 256
+    python train_yolov8_seg.py --data ../yolo_dataset_v4/data.yaml --version v6 --epochs 100
+    python train_yolov8_seg.py --export runs/segment/table_seg_v5_aug/weights/best.pt --size 320 --version v5_aug
 """
 
 import argparse
@@ -25,15 +25,12 @@ def train(args):
         workers=args.workers,
         device=args.device,
         project="runs/segment",
-        name="table_seg",
+        name=f"table_seg_{args.version}",
         exist_ok=True,
-        # early stopping
         patience=20,
-        # learning rate
         lr0=0.01,
         lrf=0.01,
         warmup_epochs=5,
-        # augmentation
         hsv_h=0.015,
         hsv_s=0.5,
         hsv_v=0.3,
@@ -44,7 +41,6 @@ def train(args):
         mosaic=1.0,
         mixup=0.1,
         copy_paste=0.1,
-        # salvataggio e validazione
         save=True,
         save_period=10,
         val=True,
@@ -56,8 +52,8 @@ def train(args):
     return best
 
 
-def export_onnx(model_path, img_size, output_dir):
-    """Esporta il modello .pt in formato ONNX."""
+def export_onnx(model_path, img_size, output_dir, version):
+    """Esporta il modello .pt in formato ONNX con nome versionato."""
     from ultralytics import YOLO
     import shutil
 
@@ -67,7 +63,7 @@ def export_onnx(model_path, img_size, output_dir):
     model.export(format="onnx", imgsz=img_size, simplify=True, opset=17, half=False)
 
     src = model_path.replace(".pt", ".onnx")
-    dst = os.path.join(output_dir, f"yolov8n_seg_table_{img_size}.onnx")
+    dst = os.path.join(output_dir, f"yolov8n_seg_table_{img_size}_{version}.onnx")
 
     if not os.path.exists(src):
         print(f"Errore: file ONNX non trovato in {src}")
@@ -93,13 +89,14 @@ def validate(model_path, data_yaml):
 
 def main():
     parser = argparse.ArgumentParser(description="Training e export YOLOv8n-seg")
-    parser.add_argument("--data", default="../yolo_dataset/data.yaml", help="Path al data.yaml")
+    parser.add_argument("--data", default="../yolo_dataset_v4/data.yaml", help="Path al data.yaml")
     parser.add_argument("--output", default="../models/trained", help="Cartella output modelli")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch", type=int, default=16)
-    parser.add_argument("--size", type=int, default=256, help="Dimensione immagine")
+    parser.add_argument("--size", type=int, default=320, help="Dimensione immagine")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--device", default="", help="Device per il training (es. 'cpu', '0')")
+    parser.add_argument("--version", required=True, help="Tag di versione (es. v5_aug, v6) usato nel run name e nel nome ONNX")
     parser.add_argument("--export", type=str, default=None, help="Path .pt da esportare (skip training)")
     parser.add_argument("--validate-only", type=str, default=None, help="Path .pt da validare")
     args = parser.parse_args()
@@ -107,12 +104,12 @@ def main():
     if args.validate_only:
         validate(args.validate_only, args.data)
     elif args.export:
-        export_onnx(args.export, args.size, args.output)
+        export_onnx(args.export, args.size, args.output, args.version)
     else:
         best = train(args)
         validate(best, args.data)
         os.makedirs(args.output, exist_ok=True)
-        export_onnx(best, args.size, args.output)
+        export_onnx(best, args.size, args.output, args.version)
 
 
 if __name__ == "__main__":
