@@ -4,12 +4,15 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -27,12 +30,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArucoMarkerTile(
     id: Int,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null
 ) {
     val scale by animateFloatAsState(
         targetValue = if (selected) 1.04f else 1f,
@@ -50,84 +55,34 @@ fun ArucoMarkerTile(
         modifier = modifier
             .scale(scale)
             .clip(RoundedCornerShape(18.dp))
-            .clickable { onClick() },
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(18.dp),
         color = containerColor,
         border = BorderStroke(if (selected) 2.dp else 1.dp, borderColor)
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f)
-                .padding(10.dp),
-            contentAlignment = Alignment.Center
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            MarkerFrame(
-                modifier = Modifier.fillMaxSize()
+            ArucoMarkerGraphic(
+                id = id,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color.White)
             )
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = "#$id",
-                fontSize = 22.sp,
+                fontSize = 14.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         }
-    }
-}
-
-@Composable
-private fun MarkerFrame(modifier: Modifier = Modifier) {
-    val frame = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-    val inner = MaterialTheme.colorScheme.surface
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(frame)
-            .padding(6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(4.dp))
-                .background(inner)
-        ) {
-            CornerDots(color = frame)
-        }
-    }
-}
-
-@Composable
-private fun CornerDots(color: Color) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        val dotModifier = Modifier
-            .padding(4.dp)
-            .clip(RoundedCornerShape(2.dp))
-
-        Box(
-            modifier = dotModifier
-                .align(Alignment.TopStart)
-                .background(color)
-                .padding(5.dp)
-        )
-        Box(
-            modifier = dotModifier
-                .align(Alignment.TopEnd)
-                .background(color)
-                .padding(5.dp)
-        )
-        Box(
-            modifier = dotModifier
-                .align(Alignment.BottomStart)
-                .background(color)
-                .padding(5.dp)
-        )
-        Box(
-            modifier = dotModifier
-                .align(Alignment.BottomEnd)
-                .background(color)
-                .padding(5.dp)
-        )
     }
 }

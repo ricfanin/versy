@@ -51,8 +51,10 @@ fun AppNavigation(
     val navController = rememberNavController()
     val connectionState by viewModel.connectionState.collectAsStateWithLifecycle()
     val address by viewModel.address.collectAsStateWithLifecycle()
-    val lastAruco by viewModel.lastAruco.collectAsStateWithLifecycle()
+    val username by viewModel.username.collectAsStateWithLifecycle()
+    val robotStatus by viewModel.robotStatus.collectAsStateWithLifecycle()
     val pourStatus by viewModel.pourStatus.collectAsStateWithLifecycle()
+    val customMarkers by viewModel.customMarkers.collectAsStateWithLifecycle()
 
     var showSettings by remember { mutableStateOf(false) }
 
@@ -92,9 +94,15 @@ fun AppNavigation(
             composable(Route.Pour.path) {
                 PourScreen(
                     connectionState = connectionState,
-                    lastAruco = lastAruco,
+                    robotStatus = robotStatus,
+                    username = username,
                     pourStatus = pourStatus,
-                    onFindAndPour = viewModel::sendFindAndPour,
+                    customMarkers = customMarkers,
+                    onRequestPour = viewModel::requestPour,
+                    onStopPour = viewModel::stopPour,
+                    onResetPour = viewModel::resetPourStatus,
+                    onAddCustomMarker = viewModel::addCustomMarker,
+                    onRemoveCustomMarker = viewModel::removeCustomMarker,
                     onOpenSettings = { showSettings = true },
                     onNavigateToJoystick = {
                         navController.navigate(Route.Joystick.path) {
@@ -110,7 +118,8 @@ fun AppNavigation(
                     connectionState = connectionState,
                     onMove = viewModel::sendMove,
                     onStop = viewModel::sendStop,
-                    onQuickPour = viewModel::sendQuickPour,
+                    onPourPressStart = viewModel::startManualPour,
+                    onPourPressStop = viewModel::stopManualPour,
                     onOpenConnection = { showSettings = true },
                     onBackToPour = {
                         navController.navigate(Route.Pour.path) {
@@ -128,7 +137,9 @@ fun AppNavigation(
         SettingsBottomSheet(
             state = connectionState,
             address = address,
+            username = username,
             onAddressChange = viewModel::updateAddress,
+            onUsernameChange = viewModel::updateUsername,
             onToggleConnect = {
                 if (connectionState == ConnectionState.Connected) viewModel.disconnect()
                 else viewModel.connect()

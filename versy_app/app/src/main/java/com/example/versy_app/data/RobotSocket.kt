@@ -12,6 +12,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 sealed interface ConnectionState {
@@ -39,10 +40,11 @@ class RobotSocket {
     )
     val incoming: SharedFlow<InboundMessage> = _incoming.asSharedFlow()
 
-    fun connect(address: String) {
+    fun connect(address: String, username: String) {
         disconnect()
         _connectionState.value = ConnectionState.Connecting
-        val url = "ws://$address/ws"
+        val user = URLEncoder.encode(username.ifBlank { "anonymous" }, "UTF-8")
+        val url = "ws://$address/ws?username=$user"
         val request = Request.Builder().url(url).build()
         webSocket = client.newWebSocket(request, listener)
     }

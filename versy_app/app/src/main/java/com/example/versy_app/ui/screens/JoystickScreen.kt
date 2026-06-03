@@ -2,7 +2,11 @@ package com.example.versy_app.ui.screens
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,19 +37,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.versy_app.data.ConnectionState
 import com.example.versy_app.ui.components.MinimalConnectionBar
 import com.example.versy_app.ui.components.OmniJoystick
-import com.example.versy_app.ui.components.QuickPourSheet
 import com.example.versy_app.ui.components.YawDial
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -58,7 +65,8 @@ fun JoystickScreen(
     connectionState: ConnectionState,
     onMove: (vx: Float, vy: Float, omega: Float) -> Unit,
     onStop: () -> Unit,
-    onQuickPour: (ml: Int) -> Unit,
+    onPourPressStart: () -> Unit,
+    onPourPressStop: () -> Unit,
     onOpenConnection: () -> Unit,
     onBackToPour: () -> Unit,
     modifier: Modifier = Modifier
@@ -68,7 +76,6 @@ fun JoystickScreen(
     var vx by remember { mutableFloatStateOf(0f) }
     var vy by remember { mutableFloatStateOf(0f) }
     var omega by remember { mutableFloatStateOf(0f) }
-    var showPourSheet by remember { mutableStateOf(false) }
 
     val isConnected = connectionState == ConnectionState.Connected
 
@@ -142,7 +149,8 @@ fun JoystickScreen(
         )
 
         ActionButtonStack(
-            onVersa = { showPourSheet = true },
+            onPourPressStart = onPourPressStart,
+            onPourPressStop = onPourPressStop,
             onStop = {
                 vx = 0f; vy = 0f; omega = 0f
                 onStop()
@@ -160,21 +168,12 @@ fun JoystickScreen(
             )
         }
     }
-
-    if (showPourSheet) {
-        QuickPourSheet(
-            onConfirm = { ml ->
-                onQuickPour(ml)
-                showPourSheet = false
-            },
-            onDismiss = { showPourSheet = false }
-        )
-    }
 }
 
 @Composable
 private fun ActionButtonStack(
-    onVersa: () -> Unit,
+    onPourPressStart: () -> Unit,
+    onPourPressStop: () -> Unit,
     onStop: () -> Unit,
     isConnected: Boolean,
     modifier: Modifier = Modifier
@@ -184,24 +183,11 @@ private fun ActionButtonStack(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        IconButton(
-            onClick = onVersa,
-            enabled = isConnected,
-            modifier = Modifier
-                .size(88.dp)
-                .clip(CircleShape),
-            colors = IconButtonDefaults.iconButtonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.LocalBar,
-                contentDescription = "Versa manuale",
-                modifier = Modifier.size(40.dp)
-            )
-        }
+        PushToPourButton(
+            onPressStart = onPourPressStart,
+            onPressStop = onPourPressStop,
+            isConnected = isConnected
+        )
         IconButton(
             onClick = onStop,
             modifier = Modifier
@@ -218,6 +204,81 @@ private fun ActionButtonStack(
                 modifier = Modifier.size(40.dp)
             )
         }
+    }
+}
+
+/**
+ * Pulsante "tieni premuto per versare" (push-to-pour): nessuna sheet, azione immediata.
+ *
+ * Alla pressione invoca [onPressStart], al rilascio (o all'annullamento del gesto, es. dito
+ * che esce dall'area) invoca [onPressStop]. Un [DisposableEffect] garantisce lo stop anche
+ * se la schermata viene lasciata mentre il pulsante è premuto, così il comando di stop
+ * raggiunge sempre il robot.
+ */
+@Composable
+private fun PushToPourButton(
+    onPressStart: () -> Unit,
+    onPressStop: () -> Unit,
+    isConnected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var holding by remember { mutableStateOf(false) }
+
+    // Letture aggiornate per il DisposableEffect, che cattura i valori al primo composing.
+    val holdingState = rememberUpdatedState(holding)
+    val onPressStopState = rememberUpdatedState(onPressStop)
+    DisposableEffect(Unit) {
+        onDispose {
+            if (holdingState.value) onPressStopState.value()
+        }
+    }
+
+    // Se ci si disconnette mentre è premuto, chiudi il gesto e notifica lo stop.
+    LaunchedEffect(isConnected) {
+        if (!isConnected && holding) {
+            holding = false
+            onPressStop()
+        }
+    }
+
+    val containerColor by animateColorAsState(
+        targetValue = when {
+            !isConnected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+            holding -> MaterialTheme.colorScheme.tertiary
+            else -> MaterialTheme.colorScheme.primary
+        },
+        label = "pourBtnColor"
+    )
+
+    Box(
+        modifier = modifier
+            .size(88.dp)
+            .clip(CircleShape)
+            .background(containerColor)
+            .semantics { contentDescription = "Tieni premuto per versare" }
+            .pointerInput(isConnected) {
+                if (!isConnected) return@pointerInput
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    holding = true
+                    onPressStart()
+                    // null = gesto annullato (dito fuori area / cancel): trattato come rilascio.
+                    waitForUpOrCancellation()
+                    holding = false
+                    onPressStop()
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.LocalBar,
+            contentDescription = null,
+            tint = if (holding)
+                MaterialTheme.colorScheme.onTertiary
+            else
+                MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(40.dp)
+        )
     }
 }
 

@@ -2,12 +2,14 @@ package com.example.versy_app.ui.screens
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,20 +17,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.LocalBar
-import androidx.compose.material.icons.rounded.MyLocation
-import androidx.compose.material.icons.rounded.Straighten
-import androidx.compose.material.icons.rounded.Rotate90DegreesCcw
-import androidx.compose.material.icons.rounded.WaterDrop
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -49,51 +47,66 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.versy_app.data.ArucoMarkers
 import com.example.versy_app.data.ConnectionState
 import com.example.versy_app.data.InboundMessage
 import com.example.versy_app.ui.components.ArucoMarkerTile
+import com.example.versy_app.ui.components.RobotStatusPanel
 import com.example.versy_app.ui.theme.VersyColors
 import com.example.versy_app.viewmodel.PourPhase
 import com.example.versy_app.viewmodel.PourStatus
+import com.example.versy_app.viewmodel.isActive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PourScreen(
     connectionState: ConnectionState,
-    lastAruco: InboundMessage.ArucoFound?,
+    robotStatus: InboundMessage.RobotStatus?,
+    username: String,
     pourStatus: PourStatus,
-    onFindAndPour: (markerId: Int, ml: Int) -> Unit,
+    customMarkers: List<Int>,
+    onRequestPour: (markerId: Int, ml: Int) -> Unit,
+    onStopPour: () -> Unit,
+    onResetPour: () -> Unit,
+    onAddCustomMarker: (Int) -> Unit,
+    onRemoveCustomMarker: (Int) -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateToJoystick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedId by remember { mutableStateOf<Int?>(null) }
-    var ml by remember { mutableFloatStateOf(100f) }
+    var selectedId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var ml by rememberSaveable { mutableFloatStateOf(100f) }
     var showConfirm by remember { mutableStateOf(false) }
 
     val isConnected = connectionState == ConnectionState.Connected
-    val isBusy = pourStatus.phase == PourPhase.Searching || pourStatus.phase == PourPhase.Pouring
+    val isBusy = pourStatus.phase.isActive
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(top = 4.dp, bottom = 96.dp)
         ) {
+            RobotStatusPanel(status = robotStatus, username = username)
+
+            Spacer(Modifier.height(12.dp))
+
             SummaryHeader(ml = ml.toInt(), selectedId = selectedId)
 
             Spacer(Modifier.height(12.dp))
@@ -115,8 +128,16 @@ fun PourScreen(
 
             MarkerGrid(
                 selectedId = selectedId,
+                customMarkers = customMarkers,
                 onSelect = { selectedId = it },
-                onCustom = { selectedId = it }
+                onAddCustomMarker = { id ->
+                    onAddCustomMarker(id)
+                    selectedId = id
+                },
+                onRemoveCustomMarker = { id ->
+                    onRemoveCustomMarker(id)
+                    if (selectedId == id) selectedId = null
+                }
             )
         }
 
@@ -166,7 +187,7 @@ fun PourScreen(
             ml = ml.toInt(),
             onConfirm = {
                 showConfirm = false
-                onFindAndPour(selectedId!!, ml.toInt())
+                onRequestPour(selectedId!!, ml.toInt())
             },
             onDismiss = { showConfirm = false }
         )
@@ -175,7 +196,8 @@ fun PourScreen(
     if (!showConfirm && pourStatus.phase != PourPhase.Idle) {
         PourProgressSheet(
             pourStatus = pourStatus,
-            lastAruco = lastAruco
+            onStop = onStopPour,
+            onDismiss = onResetPour
         )
     }
 }
@@ -185,7 +207,7 @@ private fun SummaryHeader(ml: Int, selectedId: Int?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
     ) {
@@ -273,85 +295,119 @@ private fun QuantityCard(ml: Float, onMlChange: (Float) -> Unit) {
 @Composable
 private fun MarkerGrid(
     selectedId: Int?,
+    customMarkers: List<Int>,
     onSelect: (Int) -> Unit,
-    onCustom: (Int) -> Unit,
-    presetIds: List<Int> = (0..11).toList()
+    onAddCustomMarker: (Int) -> Unit,
+    onRemoveCustomMarker: (Int) -> Unit,
+    presetIds: List<Int> = (0..11).toList(),
+    columns: Int = 4
 ) {
-    var showCustom by remember { mutableStateOf(false) }
+    var showAdd by remember { mutableStateOf(false) }
+    var removeTarget by remember { mutableStateOf<Int?>(null) }
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(4),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        contentPadding = PaddingValues(0.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(340.dp)
-    ) {
-        items(presetIds, key = { "p-$it" }) { id ->
-            ArucoMarkerTile(
-                id = id,
-                selected = selectedId == id,
-                onClick = { onSelect(id) }
-            )
+    val cells: List<@Composable RowScope.() -> Unit> = buildList {
+        presetIds.forEach { id ->
+            add {
+                ArucoMarkerTile(
+                    id = id,
+                    selected = selectedId == id,
+                    onClick = { onSelect(id) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
-        items(listOf("custom"), key = { it }) {
-            CustomTile(
-                selected = selectedId != null && selectedId !in presetIds,
-                customLabel = if (selectedId != null && selectedId !in presetIds) "#$selectedId" else null,
-                onClick = { showCustom = true }
+        customMarkers.forEach { id ->
+            add {
+                ArucoMarkerTile(
+                    id = id,
+                    selected = selectedId == id,
+                    onClick = { onSelect(id) },
+                    onLongClick = { removeTarget = id },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+        add {
+            AddMarkerTile(
+                onClick = { showAdd = true },
+                modifier = Modifier.weight(1f)
             )
         }
     }
 
-    if (showCustom) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        cells.chunked(columns).forEach { rowCells ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                rowCells.forEach { cell -> cell() }
+                repeat(columns - rowCells.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+
+    if (showAdd) {
         CustomIdDialog(
-            initial = selectedId?.takeIf { it !in presetIds }?.toString().orEmpty(),
+            existing = presetIds.toSet() + customMarkers.toSet(),
             onConfirm = {
-                onCustom(it)
-                showCustom = false
+                onAddCustomMarker(it)
+                showAdd = false
             },
-            onDismiss = { showCustom = false }
+            onDismiss = { showAdd = false }
+        )
+    }
+
+    removeTarget?.let { id ->
+        RemoveMarkerDialog(
+            id = id,
+            onConfirm = {
+                onRemoveCustomMarker(id)
+                removeTarget = null
+            },
+            onDismiss = { removeTarget = null }
         )
     }
 }
 
 @Composable
-private fun CustomTile(
-    selected: Boolean,
-    customLabel: String?,
-    onClick: () -> Unit
+private fun AddMarkerTile(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-    val containerColor = if (selected)
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-    else
-        MaterialTheme.colorScheme.surfaceVariant
-
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(92.dp)
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
-        color = containerColor,
-        border = BorderStroke(if (selected) 2.dp else 1.dp, borderColor)
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Add,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            Spacer(Modifier.height(6.dp))
             Text(
-                text = customLabel ?: "Custom",
+                text = "Aggiungi",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -362,21 +418,24 @@ private fun CustomTile(
 
 @Composable
 private fun CustomIdDialog(
-    initial: String,
+    existing: Set<Int>,
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var value by remember { mutableStateOf(initial) }
+    var value by remember { mutableStateOf("") }
     val parsed = value.toIntOrNull()
-    val valid = parsed != null && parsed in 0..999
+    val inRange = parsed != null && parsed in ArucoMarkers.idRange
+    val duplicate = parsed != null && parsed in existing
+    val valid = inRange && !duplicate
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("ID marker personalizzato") },
+        title = { Text("Aggiungi marker") },
         text = {
             Column {
                 Text(
-                    "Inserisci un ID tra 0 e 999.",
+                    "Inserisci un ID tra ${ArucoMarkers.idRange.first} e ${ArucoMarkers.idRange.last} " +
+                        "(dizionario DICT_4X4_250).",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -385,16 +444,55 @@ private fun CustomIdDialog(
                     value = value,
                     onValueChange = { v -> value = v.filter { it.isDigit() }.take(3) },
                     singleLine = true,
+                    isError = parsed != null && !valid,
                     label = { Text("ID") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
+                if (duplicate) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Marker #$parsed già presente.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = { if (valid) onConfirm(parsed!!) },
                 enabled = valid
-            ) { Text("Seleziona") }
+            ) { Text("Aggiungi") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Annulla") }
+        }
+    )
+}
+
+@Composable
+private fun RemoveMarkerDialog(
+    id: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rimuovere il marker?") },
+        text = {
+            Text(
+                text = "Il marker #$id verrà rimosso dalla lista.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) { Text("Rimuovi") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Annulla") }
@@ -430,7 +528,8 @@ private fun ConfirmPourSheet(
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "Verrà cercato il marker #$markerId e poi erogati $ml ml.",
+                text = "Il robot cercherà il marker #$markerId e avvierà il versamento. " +
+                    "La richiesta viene accodata se è già in corso un altro lavoro.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -461,11 +560,13 @@ private fun ConfirmPourSheet(
 @Composable
 private fun PourProgressSheet(
     pourStatus: PourStatus,
-    lastAruco: InboundMessage.ArucoFound?
+    onStop: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val terminal = pourStatus.phase == PourPhase.Done || pourStatus.phase == PourPhase.Failed
     ModalBottomSheet(
-        onDismissRequest = { /* non-dismissable while running */ },
+        onDismissRequest = { if (terminal) onDismiss() },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
@@ -475,42 +576,71 @@ private fun PourProgressSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Crossfade(targetState = pourStatus.phase, label = "phase") { phase ->
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    when (phase) {
-                        PourPhase.Idle -> Text("In attesa", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        PourPhase.Searching -> StatusHeader(
-                            title = "Cerco il marker…",
-                            message = pourStatus.message ?: "",
-                            color = MaterialTheme.colorScheme.tertiary,
-                            spinner = true
-                        )
-                        PourPhase.Pouring -> StatusHeader(
-                            title = "Sto versando…",
-                            message = pourStatus.message ?: "",
-                            color = MaterialTheme.colorScheme.tertiary,
-                            spinner = true
-                        )
-                        PourPhase.Complete -> StatusHeader(
-                            title = "Erogazione completata",
-                            message = pourStatus.message ?: "",
-                            color = VersyColors.extended.success,
-                            spinner = false,
-                            icon = Icons.Rounded.CheckCircle
-                        )
-                        PourPhase.Failed -> StatusHeader(
-                            title = "Errore",
-                            message = pourStatus.message ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            spinner = false,
-                            icon = Icons.Rounded.ErrorOutline
-                        )
-                    }
-                    if (lastAruco != null) {
-                        MarkerMetricsRow(lastAruco)
-                    }
+                when (phase) {
+                    PourPhase.Idle -> Text("In attesa", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    PourPhase.Queued -> StatusHeader(
+                        title = "In coda",
+                        message = pourStatus.message ?: "",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        spinner = true
+                    )
+                    PourPhase.Searching -> StatusHeader(
+                        title = "Cerco il marker…",
+                        message = pourStatus.message ?: "",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        spinner = true
+                    )
+                    PourPhase.Approaching -> StatusHeader(
+                        title = "Mi avvicino…",
+                        message = pourStatus.message ?: "",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        spinner = true
+                    )
+                    PourPhase.Pouring -> StatusHeader(
+                        title = "Sto versando…",
+                        message = pourStatus.message ?: "",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        spinner = true
+                    )
+                    PourPhase.Done -> StatusHeader(
+                        title = "Erogazione completata",
+                        message = pourStatus.message ?: "",
+                        color = VersyColors.extended.success,
+                        spinner = false,
+                        icon = Icons.Rounded.CheckCircle
+                    )
+                    PourPhase.Failed -> StatusHeader(
+                        title = "Errore",
+                        message = pourStatus.message ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        spinner = false,
+                        icon = Icons.Rounded.ErrorOutline
+                    )
+                }
+            }
+
+            if (terminal) {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) { Text("Chiudi", fontWeight = FontWeight.SemiBold) }
+            } else {
+                OutlinedButton(
+                    onClick = onStop,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.error),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(Icons.Rounded.Stop, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Interrompi", fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -542,31 +672,5 @@ private fun StatusHeader(
                 Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-    }
-}
-
-@Composable
-private fun MarkerMetricsRow(lastAruco: InboundMessage.ArucoFound) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Metric(icon = Icons.Rounded.MyLocation, label = "Marker", value = "#${lastAruco.markerId}")
-        Metric(icon = Icons.Rounded.Straighten, label = "Distanza", value = "${"%.1f".format(lastAruco.distanceCm)} cm")
-        Metric(icon = Icons.Rounded.Rotate90DegreesCcw, label = "Angolo", value = "${"%.1f".format(lastAruco.angleDeg)}°")
-    }
-}
-
-@Composable
-private fun Metric(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.height(4.dp))
-        Text(value, fontWeight = FontWeight.SemiBold)
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

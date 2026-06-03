@@ -37,12 +37,15 @@ import com.example.versy_app.data.ConnectionState
 fun SettingsBottomSheet(
     state: ConnectionState,
     address: String,
+    username: String,
     onAddressChange: (String) -> Unit,
+    onUsernameChange: (String) -> Unit,
     onToggleConnect: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var editing by remember { mutableStateOf(address) }
+    var editingUser by remember { mutableStateOf(username) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -65,6 +68,14 @@ fun SettingsBottomSheet(
             StatusLine(state)
 
             OutlinedTextField(
+                value = editingUser,
+                onValueChange = { editingUser = it },
+                label = { Text("Nome utente") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
                 value = editing,
                 onValueChange = { editing = it },
                 label = { Text("Indirizzo IP:porta") },
@@ -78,21 +89,27 @@ fun SettingsBottomSheet(
             ) {
                 val isConnected = state == ConnectionState.Connected
                 val trimmed = editing.trim()
+                val trimmedUser = editingUser.trim()
                 val addressChanged = trimmed != address && trimmed.isNotEmpty()
+                val userChanged = trimmedUser != username && trimmedUser.isNotEmpty()
+                val anyChanged = addressChanged || userChanged
+
+                fun commitEdits() {
+                    if (addressChanged) onAddressChange(trimmed)
+                    if (userChanged) onUsernameChange(trimmedUser)
+                }
 
                 OutlinedButton(
-                    onClick = {
-                        if (addressChanged) onAddressChange(trimmed)
-                    },
-                    enabled = addressChanged,
+                    onClick = { commitEdits() },
+                    enabled = anyChanged,
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Salva IP")
+                    Text("Salva")
                 }
                 Button(
                     onClick = {
-                        if (addressChanged) onAddressChange(trimmed)
+                        commitEdits()
                         onToggleConnect()
                     },
                     modifier = Modifier.weight(1f).height(52.dp),
