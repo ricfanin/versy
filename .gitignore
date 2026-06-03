@@ -1,0 +1,12 @@
+# Config locale strumenti / editor
+.claude/
+.idea/workspace.xml
+
+# Python / venv
+.venv/
+__pycache__/
+*.pyc
+
+# Output training / run
+runs/
+*.log
