@@ -10,7 +10,7 @@ def handle_message(message: BaseMessage, sm: StateMachine):
         case MoveMessage():
             return move_handler(message)
         case StopMessage():
-            return stop_handler(message)
+            return stop_handler(message, sm)
         case PourMessage():
             return pour_handler(message)
     

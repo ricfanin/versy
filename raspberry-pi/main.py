@@ -16,6 +16,7 @@ def _run_uvicorn(app):
 if __name__ == "__main__":
     sm = StateMachine()
     server = Server(sm)
+    sm.publisher = server.publish
 
     uvicorn_thread = threading.Thread(
         target=_run_uvicorn, args=(server.app,), daemon=True

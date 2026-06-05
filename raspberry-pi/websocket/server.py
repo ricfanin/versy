@@ -1,6 +1,7 @@
 # Fastapi App + Websocket
 
 import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from machine.state_machine import StateMachine
@@ -9,20 +10,37 @@ from utils.debug import get_logger
 
 from websocket.handlers.router import handle_message
 from websocket.utils.connection_manager import ConnectionManager  # type: ignore
-from websocket.utils.messages import ErrorMessage, IncomingMessages
+from websocket.utils.messages import BaseMessage, ErrorMessage, IncomingMessages
 
 
 class Server:
     def __init__(self, sm: StateMachine):
         self.INACTIVITY_TIMEOUT = 300
         self.sm = sm
-        self.app = FastAPI()
+        self.loop: asyncio.AbstractEventLoop | None = None
+
+        @asynccontextmanager
+        async def lifespan(app):
+            self.loop = asyncio.get_running_loop()
+            yield
+
+        self.app = FastAPI(lifespan=lifespan)
         self.incoming_mex_adapter = TypeAdapter(IncomingMessages)
         self.manager = ConnectionManager()
         self.logger = get_logger("websocket.server")
 
         # Registra il route websocket
         self.app.websocket("/ws")(self.websocket_endpoint)
+
+    def publish(self, message: BaseMessage) -> None:
+        """Push thread-safe a tutti i client connessi."""
+        if self.loop is None:
+            self.logger.warning("publish() chiamato prima dello startup, messaggio scartato")
+            return
+        asyncio.run_coroutine_threadsafe(
+            self.manager.broadcast(message.model_dump()),
+            self.loop,
+        )
 
     async def websocket_endpoint(self, websocket: WebSocket):
         await self.manager.connect(websocket)
