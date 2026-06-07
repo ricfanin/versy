@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(git stash:*)",
+      "Bash(ls -la raspberry-pi/semantic_segmentation/ 2>/dev/null; echo \"---\"; find . -path ./node_modules -prune -o -name \"*.py\" -print | head -30)",
+      "WebSearch",
+      "Bash(ls raspberry-pi/semantic_segmentation/*.zip 2>/dev/null; ls raspberry-pi/semantic_segmentation/dataset/*.zip 2>/dev/null)",
+      "Bash(cd raspberry-pi/semantic_segmentation && unzip -o \"My First Project.v2i.png-mask-semantic.zip\" -d roboflow_dataset && ls -la roboflow_dataset/)",
+      "Bash(cd raspberry-pi/semantic_segmentation && echo \"=== Structure ===\" && ls roboflow_dataset/ && echo \"=== Train count ===\" && ls roboflow_dataset/train/*.jpg 2>/dev/null | wc -l && echo \"=== Valid count ===\" && ls roboflow_dataset/valid/*.jpg 2>/dev/null | wc -l && echo \"=== Test count ===\" && ls roboflow_dataset/test/*.jpg 2>/dev/null | wc -l && echo \"=== Sample mask values ===\" && python3 -c \"\nfrom PIL import Image\nimport numpy as np\nimport glob\nmasks = sorted\\(glob.glob\\('roboflow_dataset/train/*_mask.png'\\)\\)[:3]\nfor m in masks:\n    img = np.array\\(Image.open\\(m\\)\\)\n    print\\(f'{m}: shape={img.shape}, unique={np.unique\\(img\\)}, dtype={img.dtype}'\\)\n\")",
+      "Bash(echo \"=== Structure ===\" && ls roboflow_dataset/ && echo \"=== Train ===\" && ls roboflow_dataset/train/*.jpg 2>/dev/null | wc -l && echo \"=== Valid ===\" && ls roboflow_dataset/valid/*.jpg 2>/dev/null | wc -l && echo \"=== Test ===\" && ls roboflow_dataset/test/*.jpg 2>/dev/null | wc -l && echo \"=== Mask values ===\" && python3 -c \"\nfrom PIL import Image\nimport numpy as np\nimport glob\nmasks = sorted\\(glob.glob\\('roboflow_dataset/train/*_mask.png'\\)\\)[:3]\nfor m in masks:\n    img = np.array\\(Image.open\\(m\\)\\)\n    print\\(f'{m}: shape={img.shape}, unique={np.unique\\(img\\)}, dtype={img.dtype}'\\)\n\")",
+      "Bash(cd /mnt/c/Users/Riccardo/Documents/Coding/versy/raspberry-pi/semantic_segmentation/training && pip install -r requirements.txt 2>&1 | tail -5)",
+      "Bash(python train_segformer.py --data ../roboflow_dataset --epochs 50 --batch 8 --size 256 2>&1)",
+      "Bash(python3 train_segformer.py --data ../roboflow_dataset --epochs 50 --batch 8 --size 256 2>&1)",
+      "Bash(python3 -c \"import cv2; cap = cv2.VideoCapture\\(0\\); print\\('Opened:', cap.isOpened\\(\\)\\); cap.release\\(\\)\" 2>&1)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(file:*)",
+      "Bash(grep -rh \"^import\\\\|^from\" /home/versy/versy/segmentation/*.py)",
+      "Bash(grep:*)",
+      "Bash(du:*)",
+      "Bash(python3:*)",
+      "Bash(sudo fuser *)",
+      "Bash(kill *)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "wpf-mcp"
+  ]
+}
