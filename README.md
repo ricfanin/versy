@@ -44,8 +44,9 @@ Here is a breakdown of the most important files driving the logic in each direct
 ├── msp_432401r/
 │   ├── main.c                                # Main I2C logic and loop
 │   └── motor_driver/
-│       └── mc33926_driver.c                  # Low-level driver for the MC33926 (PWM, pins)
-│
+│       ├── mc33926_driver.c                  # Low-level driver for the MC33926 (PWM, pins)
+│       └── motor_driver.h                    # Header file for the motor driver
+│ 
 ├── raspberry-pi/
 │   ├── main.py                               # FastAPI/WebSocket server entry point
 │   ├── config/
