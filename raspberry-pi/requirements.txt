@@ -10,13 +10,22 @@ pydantic
 
 # Configuration
 pyyaml
-# Logging (optional, but recommended)
-python-json-logger
 
 # Computer Vision
 onnxruntime
 numpy
-opencv-python
+opencv-contrib-python
+
+# Camera (Raspberry Pi)
+# Note: picamera2 typically requires system-level installation:
+# sudo apt install python3-libcamera python3-kms-cxx python3-picamera2
+picamera2
+
+# Hardware & Sensors (Raspberry Pi)
+smbus2
+adafruit-blinka
+adafruit-circuitpython-vl53l0x
+adafruit-circuitpython-busdevice
 
 # Development Dependencies
 # Uncomment if needed for development
