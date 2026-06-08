@@ -153,6 +153,6 @@ Here is a breakdown of the most important files driving the logic in each direct
 ## 6. Team Members & Contributions
 
 *   **Daniele Dalla Vecchia**: [Descrizione di cosa ha fatto Daniele, es. sviluppo firmware MSP432, logica motori...]
-*   **Francesco Fanton**: [State Machine logic, Fusion design, 3d printings and software tester and integrator.]
+*   **Francesco Fanton**: State Machine logic, Fusion design, 3d printings and software tester and integrator.
 *   **Mattia Tognato**: [Descrizione di cosa ha fatto Mattia, es. addestramento rete YOLO, script di segmentazione...]
 *   **Riccardo Fanin**: [Descrizione di cosa ha fatto Riccardo, es. backend Raspberry Pi, WebSockets, calibrazione camera...]
