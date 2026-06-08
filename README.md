@@ -1,6 +1,6 @@
 # Versy - Versatile Robot System
 
-Versy is a robotic system featuring an omnidirectional mobile base (3 motors) and a liquid pump (1 motor), controlled by an MSP432 microcontroller and a Raspberry Pi. The system includes an Android companion app for remote manual operation (Joystick) and autonomous tasks (Pouring based on computer vision, Aruco markers, and YOLO segmentation).
+Versy is a robotic system featuring an omnidirectional mobile base ([Kiwi Drive](https://en.wikipedia.org/wiki/Kiwi_drive)) and a liquid pump (1 motor), controlled by an MSP432 microcontroller and a Raspberry Pi. The system includes an Android companion app for remote manual operation (Joystick) and autonomous tasks (Pouring based on computer vision, Aruco markers, and YOLO segmentation).
 
 ---
 
@@ -153,5 +153,5 @@ Here is a breakdown of the most important files driving the logic in each direct
 ## 6. Team Members & Contributions
 *   **Daniele Dalla Vecchia**: Camera Calibration, ArUco code detector, kiwi-drive kinematic, MSP432 firmware, I2C communication.
 *   **Francesco Fanton**: State Machine logic, Fusion design, 3d printings and software tester and integrator.
-*   **Mattia Tognato**: [Descrizione di cosa ha fatto Mattia, es. addestramento rete YOLO, script di segmentazione...]
+*   **Mattia Tognato**: State logic (ArUco centering, scan state movement), electronics, cable soldering and cable management.
 *   **Riccardo Fanin**: Fusion design, Websocket comunication, Segmentation model training and integration, mobile app
