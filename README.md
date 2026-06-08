@@ -114,7 +114,8 @@ Here is a breakdown of the most important files driving the logic in each direct
    ```bash
    python config/camera_calibration.py
    ```
-   * Choose option **1** to capture images. Hold a printed chessboard in front of the camera and press `SPACE` when the corners are highlighted in green (capture ~20 images). Press `ESC` when done.
+   * Choose option **1** to capture images. Hold a printed chessboard in front of the camera and press `SPACE` when the corners are highlighted in green (capture ~20 images). Press `ESC` when done. You can use the following photo:
+     <img src="images/chessboard.jpeg" alt="chessboard" width="250">
    * Choose option **2** to perform the calibration. This will generate a `camera_calibration.npz` file containing the camera matrix and distortion coefficients.
 5. Start the main server:
    ```bash
@@ -144,9 +145,8 @@ Here is a breakdown of the most important files driving the logic in each direct
 ---
 
 ## 5. Media Links
-
 *   **Slides Presentation**: [Link](https://canva.link/gac6j1pceaj32lf)
-*   **YouTube Video**: [Inserire Link al Video YouTube qui]
+*   **YouTube Video**:  [Versy-Video](https://youtu.be/0izqmVGTUHI?si=aVkfisXJMKIOZBLL)
 
 ---
 
