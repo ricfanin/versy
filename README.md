@@ -145,7 +145,7 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 ## 5. Media Links
 
-*   **PowerPoint Presentation**: [Link](https://www.canva.com/design/DAHIyCrl39s/qTAB81Rhk6q5A5ki1rf5Hg/edit?utm_content=DAHIyCrl39s&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+*   **Slides Presentation**: [Link](https://canva.link/gac6j1pceaj32lf)
 *   **YouTube Video**: [Inserire Link al Video YouTube qui]
 
 ---
