@@ -41,11 +41,12 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 ```text
 .
-├── msp_432401r/
-│   ├── main.c                                # Main I2C logic and loop
-│   └── motor_driver/
-│       ├── mc33926_driver.c                  # Low-level driver for the MC33926 (PWM, pins)
-│       └── motor_driver.h                    # Header file for the motor driver
+├── msp/                                      # MSP432 firmware (Code Composer Studio project)
+│   └── msp_432401r/
+│       ├── main.c                            # Main I2C logic and loop
+│       └── motor_driver/
+│           ├── mc33926_driver.c              # Low-level driver for the MC33926 (PWM, pins)
+│           └── mc33926_driver.h              # Header file for the motor driver
 │ 
 ├── raspberry-pi/
 │   ├── main.py                               # FastAPI/WebSocket server entry point
@@ -96,7 +97,7 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 ### A. MSP432 Firmware
 1. Open **Code Composer Studio**.
-2. Import the `msp_432401r` project into your workspace.
+2. Import the project located in the `msp/` folder into your workspace.
 3. Build the project (`Project -> Build Project`).
 4. Connect the MSP432 LaunchPad via USB and click the **Debug** (or Flash) icon to burn the firmware.
 

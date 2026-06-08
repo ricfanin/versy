@@ -1,6 +1,0 @@
-"./msp_432401r/main.obj"
-"./msp_432401r/startup_msp432p401r_ccs.obj"
-"./msp_432401r/system_msp432p401r.obj"
-"./msp_432401r/motor_driver/mc33926_driver.obj"
-"../msp_432401r/msp432p401r.cmd"
--llibc.a

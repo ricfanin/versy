@@ -1,2 +1,15 @@
-/venv
-.vscode
+# Code Composer Studio / build output
+Debug/
+Release/
+*.obj
+*.o
+*.d
+*.out
+*.map
+*.lst
+*.opt
+*_linkInfo.xml
+
+# CCS / Eclipse local metadata
+.metadata/
+*.bak
