@@ -7,14 +7,26 @@ Versy is a robotic system featuring an omnidirectional mobile base (3 motors) an
 ## 1. Hardware and Software Requirements
 
 ### Hardware
-*   **MSP432P401R LaunchPad**: Real-time microcontroller for PWM generation.(images/msp432.png)
-*   **Motor Drivers**: 2x MC33926 drivers for motors and pump.
-*   **Motors**: 3x DC motors for omni-wheels (kiwi-drive) + 1 DC pump.
-*   **ToF**: 1 frontal ToF vl53l0x, calibrate the correct distance between robot and glass.
-*   **Raspberry Pi 4 (with Camera Module)**: Main computation unit, computer vision, and I2C master.
-*   **Android Device**: Smartphone or tablet to run the companion app.
-*   **Chessboard**: A 9x6 inner-corners chessboard (27mm squares) for camera calibration.
 
+* **MSP432P401R LaunchPad**: Real-time microcontroller for PWM generation.<br>
+    <img src="images/msp432.png" alt="MSP432" width="250">
+
+* **Motor Drivers**: 2x MC33926 drivers for motors and pump.<br>
+    <img src="images/driver.png" alt="Motor Drivers" width="250">
+
+* **Motors**: 3x DC motors for omni-wheels (kiwi-drive) + 1 DC pump.<br>
+    <img src="images/motor_dc.png" alt="DC Motors" width="250">
+
+* **ToF**: 1 frontal ToF vl53l0x, calibrate the correct distance between robot and glass.<br>
+    <img src="images/ToF.png" alt="ToF Sensor" width="250">
+
+* **Raspberry Pi 4 (with Camera Module)**: Main computation unit, computer vision, and I2C master.<br>
+    <img src="images/raspberrypi4.png" alt="Raspberry Pi 4" width="250">
+
+* **Android Device**: Smartphone or tablet to run the companion app.<br>
+    
+* **Chessboard**: A 9x6 inner-corners chessboard (27mm squares) for camera calibration.<br>
+    
 ### Software
 *   **Code Composer Studio (CCS)**: To build and flash the MSP432 C firmware.
 *   **Python 3.x**: On Raspberry Pi (FastAPI, WebSockets, OpenCV, Picamera2, ONNXRuntime).
