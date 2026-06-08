@@ -54,13 +54,12 @@ def convert_split(zf, split, out_dir, min_area=100):
 
     images = {img["id"]: img for img in data["images"]}
 
-    # mappa tutte le categorie (tranne supercategory "objects") a classe 0 = table
+    # salto la supercategory "objects" di Roboflow, tutto il resto -> classe 0
     cat_map = {}
     for cat in data["categories"]:
         if cat["name"] != "objects":
             cat_map[cat["id"]] = 0
 
-    # raggruppa annotazioni per immagine
     anns_by_img = {}
     for ann in data["annotations"]:
         anns_by_img.setdefault(ann["image_id"], []).append(ann)
@@ -70,7 +69,6 @@ def convert_split(zf, split, out_dir, min_area=100):
         fname = info["file_name"]
         h, w = info["height"], info["width"]
 
-        # estrai immagine dallo zip
         try:
             img_bytes = zf.read(f"{split}/{fname}")
             with open(os.path.join(img_dir, fname), "wb") as f:
@@ -78,7 +76,6 @@ def convert_split(zf, split, out_dir, min_area=100):
         except KeyError:
             continue
 
-        # converti annotazioni in formato YOLO
         lines = []
         for ann in anns_by_img.get(img_id, []):
             if ann["category_id"] not in cat_map:
@@ -87,10 +84,8 @@ def convert_split(zf, split, out_dir, min_area=100):
             seg = ann["segmentation"]
 
             if isinstance(seg, dict):
-                # formato RLE
                 polys = rle_to_polygons(seg, h, w, min_area)
             elif isinstance(seg, list):
-                # formato polygon
                 polys = []
                 for poly in seg:
                     if len(poly) < 6:
@@ -130,11 +125,8 @@ def main():
         for split in ["train", "valid", "test"]:
             total += convert_split(zf, split, args.output, args.min_area)
 
-    # genera data.yaml per YOLOv8
-    abs_path = os.path.abspath(args.output).replace("\\", "/")
     yaml_path = os.path.join(args.output, "data.yaml")
     with open(yaml_path, "w") as f:
-        f.write(f"path: {abs_path}\n")
         f.write("train: images/train\n")
         f.write("val: images/valid\n")
         f.write("test: images/test\n\n")

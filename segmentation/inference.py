@@ -3,12 +3,12 @@
 Inferenza YOLOv8n-seg per table detection su Raspberry Pi 4.
 
 Uso:
-    python3 inference.py                        # PiCamera, 256px
-    python3 inference.py --size 128             # PiCamera, 128px
+    python3 inference.py                        # PiCamera, modello canonical (320 v5_aug)
+    python3 inference.py --version v1 --size 256   # Baseline v1
+    python3 inference.py --version v4              # Run parziale v4 (320)
     python3 inference.py --source usb           # Webcam USB
     python3 inference.py --source video.mp4     # Da file video
     python3 inference.py --headless             # Senza GUI
-    python3 inference.py --int8                 # Modello quantizzato INT8
 """
 
 import argparse
@@ -21,9 +21,8 @@ import onnxruntime as ort
 from camera import open_camera
 
 
-def load_model(size, int8=False):
-    suffix = "_int8" if int8 else ""
-    model_path = f"models/trained/yolov8n_seg_table_{size}{suffix}.onnx"
+def load_model(size, version):
+    model_path = f"models/trained/yolov8n_seg_table_{size}_{version}.onnx"
 
     opts = ort.SessionOptions()
     opts.intra_op_num_threads = 4
@@ -44,15 +43,13 @@ def preprocess(frame, size):
 
 def postprocess(outputs, frame_h, frame_w, img_size, conf_threshold=0.5):
     """Restituisce una maschera binaria (0/255) dalla output del modello."""
-    detections = outputs[0][0].T  # (N candidati, 37 valori)
-    prototypes = outputs[1][0]    # (32, mask_h, mask_w)
+    detections = outputs[0][0].T
+    prototypes = outputs[1][0]
 
-    # ogni candidato ha: [x,y,w,h, score, 32 coefficienti maschera]
     boxes = detections[:, :4]
     scores = detections[:, 4]
     mask_coeffs = detections[:, 5:]
 
-    # filtra candidati con score troppo basso
     mask_vuota = np.zeros((frame_h, frame_w), dtype=np.uint8)
     keep = scores > conf_threshold
     if not np.any(keep):
@@ -70,7 +67,6 @@ def postprocess(outputs, frame_h, frame_w, img_size, conf_threshold=0.5):
     y2 = boxes[:, 1] + half_h
     boxes_xyxy = np.stack([x1, y1, x2, y2], axis=1)
 
-    # NMS: rimuovi box duplicati
     indices = cv2.dnn.NMSBoxes(
         boxes_xyxy.tolist(), scores.tolist(), conf_threshold, 0.5
     )
@@ -78,15 +74,13 @@ def postprocess(outputs, frame_h, frame_w, img_size, conf_threshold=0.5):
         return mask_vuota
     indices = np.array(indices).flatten()
 
-    # ricostruisci maschera combinando i 32 prototipi con i coefficienti
     mask_h, mask_w = prototypes.shape[1], prototypes.shape[2]
     final_mask = np.zeros((frame_h, frame_w), dtype=np.uint8)
 
     for i in indices:
         raw = np.tensordot(mask_coeffs[i], prototypes, axes=([0], [0]))
-        raw = 1.0 / (1.0 + np.exp(-raw))  # sigmoid
+        raw = 1.0 / (1.0 + np.exp(-raw))
 
-        # crop al bounding box
         box = boxes_xyxy[i]
         sx, sy = mask_w / img_size, mask_h / img_size
         bx1 = max(0, int(box[0] * sx))
@@ -104,18 +98,18 @@ def postprocess(outputs, frame_h, frame_w, img_size, conf_threshold=0.5):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--size", type=int, default=256)
+    parser.add_argument("--size", type=int, default=320)
+    parser.add_argument("--version", default="v5_aug", help="Versione modello: v1 | v4 | v5_aug")
     parser.add_argument("--conf", type=float, default=0.5)
     parser.add_argument("--source", default="picamera", help="picamera | usb | path/to/video")
     parser.add_argument("--camera-id", type=int, default=0)
     parser.add_argument("--width", type=int, default=320)
     parser.add_argument("--height", type=int, default=240)
     parser.add_argument("--headless", action="store_true")
-    parser.add_argument("--int8", action="store_true", help="Usa modello quantizzato INT8")
     parser.add_argument("--save-interval", type=int, default=30)
     args = parser.parse_args()
 
-    session, input_name = load_model(args.size, args.int8)
+    session, input_name = load_model(args.size, args.version)
     cam = open_camera(args.source, args.camera_id, args.width, args.height)
 
     if not cam.isOpened():
