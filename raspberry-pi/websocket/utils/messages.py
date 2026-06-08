@@ -26,11 +26,20 @@ class StopMessage(BaseMessage):
 class ArucoFindMessage(BaseMessage):
     type: Literal["find_aruco"] = "find_aruco"  # type: ignore[override]
     marker_id: int
+    ml: int
 
 
 class PourMessage(BaseMessage):
     type: Literal["pour"] = "pour"  # type: ignore[override]
     ml: int
+
+
+class PourStartMessage(BaseMessage):
+    type: Literal["pour_start"] = "pour_start"  # type: ignore[override]
+
+
+class PourStopMessage(BaseMessage):
+    type: Literal["pour_stop"] = "pour_stop"  # type: ignore[override]
 
 
 # outgoing message
@@ -64,12 +73,25 @@ class ErrorMessage(BaseMessage):
     message: str
 
 
+class JobInfo(BaseModel):
+    username: str
+    marker_id: int
+
+
+class RobotStatusMessage(BaseMessage):
+    type: Literal["robot_status"] = "robot_status"  # type: ignore[override]
+    state: str
+    current_job: JobInfo | None = None
+    queue: list[JobInfo] = []
+    connected_users: list[str] = []
+
+
 IncomingMessages = Annotated[
-    Union[MoveMessage, StopMessage, ArucoFindMessage, PourMessage],
+    Union[MoveMessage, StopMessage, ArucoFindMessage, PourMessage, PourStartMessage, PourStopMessage],
     Field(discriminator="type"),
 ]
 
 OutgoingMessages = Annotated[
-    Union[StatusMessage, ArucoFoundMessage, ArucoLostMessage, PourCompleteMessage, ErrorMessage],
+    Union[StatusMessage, RobotStatusMessage, ArucoFoundMessage, ArucoLostMessage, PourCompleteMessage, ErrorMessage],
     Field(discriminator="type"),
 ]

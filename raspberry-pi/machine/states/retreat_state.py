@@ -16,7 +16,7 @@ class RetreatState(BaseState):
     ROTATE_VANG = -25
     ROTATION_DURATION = 1.0
 
-    def __init__(self, state_machine: "StateMachine", initial_marker: dict):
+    def __init__(self, state_machine: "StateMachine"):
         self.sm = state_machine
         self.phase = "retreating"
         self.phase_start_time = None

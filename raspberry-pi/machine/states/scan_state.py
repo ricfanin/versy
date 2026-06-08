@@ -6,18 +6,21 @@ from machine.base_state import BaseState
 
 logger = get_logger("states.scan")
 
-SCAN_FORWARD_VY = 28
-SCAN_LATERAL_VX = 28
-SCAN_ROTATION_VANG = 14
+SCAN_FORWARD_VY = 32
+SCAN_LATERAL_VX = 32
+SCAN_ROTATION_VANG = 16
 SCAN_AND_THRESHOLD_PX = 10
 SCAN_CONFIRM_FRAMES = 4
 
 
 class ScanState(BaseState):
-    def __init__(self, state_machine, marker_id):
+    def __init__(self, state_machine):
         self.sm = state_machine
-        self.id = marker_id
         self.confirm_count = 0
+
+    @property
+    def id(self):
+        return self.sm.current_job.marker_id
 
     def enter(self):
         logger.info("Entering scan state")
