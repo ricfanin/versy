@@ -1,6 +1,8 @@
-# Versy - Versatile Robot System
+# Versy - Liquid Pouring Robot
 
-Versy is a robotic system featuring an omnidirectional mobile base ([Kiwi Drive](https://en.wikipedia.org/wiki/Kiwi_drive)) and a liquid pump (1 motor), controlled by an MSP432 microcontroller and a Raspberry Pi. The system includes an Android companion app for remote manual operation (Joystick) and autonomous tasks (Pouring based on computer vision, Aruco markers, and YOLO segmentation).
+Versy is a robotic system featuring an omnidirectional mobile base ([Kiwi Drive](https://en.wikipedia.org/wiki/Kiwi_drive)) and a liquid pump (1 motor), controlled by an MSP432 microcontroller and a Raspberry Pi. Its goal is to autonomously pour liquid into drinks. The system includes an Android companion app for remote manual operation (Joystick) and autonomous tasks (Pouring based on computer vision, Aruco markers, and YOLO segmentation).
+
+<img src="images/versy.png" alt="Versy" width="350">
 
 ---
 
@@ -11,13 +13,13 @@ Versy is a robotic system featuring an omnidirectional mobile base ([Kiwi Drive]
 * **MSP432P401R LaunchPad**: Real-time microcontroller for PWM generation.<br>
     <img src="images/msp432.png" alt="MSP432" width="250">
 
-* **Motor Drivers**: 2x MC33926 drivers for motors and pump.<br>
-    <img src="images/driver.png" alt="Motor Drivers" width="250">
+* **Motor Drivers**: 2 drivers. An MC33926 driving 2 omni-wheel motors, and a Pololu Dual VNH5019 driving the third omni-wheel motor and the pump.<br>
+    <img src="images/driver.png" alt="MC33926 Driver" width="250"> <img src="images/driver2.png" alt="Pololu Dual VNH5019 Driver" width="250">
 
 * **Motors**: 3x DC motors for omni-wheels (kiwi-drive) + 1 DC pump.<br>
     <img src="images/motor_dc.png" alt="DC Motors" width="250"> <img src="images/pump.png" alt="DC Pump" width="250">
 
-* **ToF**: 1 frontal ToF vl53l0x, calibrate the correct distance between robot and glass.<br>
+* **ToF**: 1 frontal ToF vl53l0x, used to calibrate the correct distance between the robot and the glass.<br>
     <img src="images/ToF.png" alt="ToF Sensor" width="250">
 
 * **Raspberry Pi 4 (with Camera Module)**: Main computation unit, computer vision, and I2C master.<br>
@@ -62,7 +64,8 @@ Here is a breakdown of the most important files driving the logic in each direct
 │   │       └── retreat_state.py              # Robot returns to home position
 │   ├── robot/
 │   │   ├── motors.py                         # I2C driver to communicate with the MSP432
-│   │   └── camera.py                         # Picamera2 / OpenCV handler
+│   │   ├── camera.py                         # Picamera2 / OpenCV handler
+│   │   └── tofs.py                           # Frontal ToF (VL53L0X) distance sensing
 │   ├── vision/
 │   │   ├── aruco_detect.py                   # ArUco marker pose estimation and tracking
 │   │   └── table_segmentation.py             # YOLOv8 inference for table/cup segmentation
@@ -70,8 +73,8 @@ Here is a breakdown of the most important files driving the logic in each direct
 │       ├── server.py                         # WS connections management
 │       └── handlers/
 │           ├── action_handler.py             # Parses App commands (e.g. move joystick)
-│           └── aruco_handler.py              # Streams detected markers back to the App
-│           └── router.py                     # Routes messages to the correct handler 
+│           ├── aruco_handler.py              # Streams detected markers back to the App
+│           └── router.py                     # Routes messages to the correct handler
 │
 ├── versy_app/                                # Android Application
 │   └── app/src/main/java/com/example/versy_app/
@@ -84,16 +87,17 @@ Here is a breakdown of the most important files driving the logic in each direct
 │           ├── RobotSocket.kt                # Socket connection handling in Android
 │           └── Messages.kt                   # JSON serializers/deserializers for WS messages
 │
-└── segmentation/
-    ├── datasets/yolo_dataset/data.yaml       # Dataset mapping for YOLO
+└── segmentation/                            # YOLOv8 training & validation (dataset not versioned)
     ├── training/
-    │   └── train_yolov8_seg.py               # Script used to train YOLOv8 locally
-    └── inference.py                          # Tests YOLOv8 model inference
+    │   ├── convert_coco_to_yolo.py           # Converts a Roboflow COCO export to YOLO format
+    │   └── train_yolov8_seg.py               # Trains YOLOv8n-seg and exports to ONNX
+    ├── inference.py                          # Tests YOLOv8 model inference
+    └── val_deployed.py                       # Validates the deployed ONNX model (256px)
 ```
 
 ---
 
-## 3. How to Build, Burn, Run Project
+## 3. How to Build, Burn, and Run the Project
 
 ### A. MSP432 Firmware
 1. Open **Code Composer Studio**.
@@ -132,7 +136,11 @@ Here is a breakdown of the most important files driving the logic in each direct
 ### D. YOLO Segmentation (Optional - Retraining)
 1. Navigate to the `segmentation` folder.
 2. Ensure you have PyTorch and Ultralytics installed.
-3. Run `python training/train_yolov8_seg.py` to retrain the model on the provided dataset.
+3. Run the training, passing the dataset config and a version tag (both used in the run name and the exported ONNX file name):
+   ```bash
+   python training/train_yolov8_seg.py --data ../yolo_dataset_v4/data.yaml --version v6 --epochs 100
+   ```
+   The script trains YOLOv8n-seg, validates it, and exports the model to ONNX under `models/trained/`.
 
 ---
 
@@ -140,8 +148,10 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 1. **Power Up**: Turn on the robot base. Ensure both the MSP432 and the Raspberry Pi boot up and the FastAPI server is running.
 2. **Connect**: Open the Versy app on your Android device. Go to the Settings panel and insert the IP address of the Raspberry Pi.
-3. **Manual Control**: Navigate to the Joystick Screen to manually control the omni-wheels and test the movement.
-4. **Autonomous Mode**: Place your glass on the personalized Versy coaster. Switch to the Pour Screen to begin the autonomous sequence, where the robot will approach the target (using Aruco and YOLO segmentation) and trigger the pump.
+3. **Manual Control**: Navigate to the Joystick Screen to manually control the omni-wheels and test the movement.<br>
+    <img src="images/manual_drive.jpeg" alt="Manual Control" width="350">
+4. **Autonomous Mode**: Place your glass on the personalized Versy coaster. Switch to the Pour Screen to begin the autonomous sequence, where the robot will approach the target (using Aruco and YOLO segmentation) and trigger the pump.<br>
+    <img src="images/auto_drive.jpeg" alt="Autonomous Control" width="180">
 
 ---
 
@@ -153,6 +163,6 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 ## 6. Team Members & Contributions
 *   **Daniele Dalla Vecchia**: Camera Calibration, ArUco code detector, kiwi-drive kinematic, MSP432 firmware, I2C communication.
-*   **Francesco Fanton**: State Machine logic, Fusion design, 3d printings and software tester and integrator.
+*   **Francesco Fanton**: State Machine logic, Fusion design, 3D printing, software testing and integration.
 *   **Mattia Tognato**: State logic (ArUco centering, scan state movement), electronics, cable soldering and cable management.
-*   **Riccardo Fanin**: Fusion design, Websocket comunication, Segmentation model training and integration, mobile app
+*   **Riccardo Fanin**: Fusion design, WebSocket communication, segmentation model training and integration, mobile app.

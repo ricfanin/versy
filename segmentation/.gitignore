@@ -1,6 +1,21 @@
+# Dataset (immagini, label, export) - non versionare
+datasets/
 yolo_dataset/
 yolo_dataset_v4/
 roboflow_dataset/
 *.zip
+
+# Modelli e pesi
+*.pt
+*.onnx
+
+# Output di training / inferenza
 training/runs/
+runs/
 output/
+test_results/
+
+# Cache Python
+__pycache__/
+*.pyc
+.venv/
