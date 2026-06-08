@@ -44,7 +44,6 @@ class ArucoDetector:
         self.CANDIDATE_MAX_DISTANCE_PX = 60
         self.CANDIDATE_SIZE_TOLERANCE = 0.5  # perimetro candidato deve essere entro +/-50% dell'ultimo noto
 
-        # Buffer per smoothing del pitch (debug)
         self.pitch_history = []
         self.PITCH_BUFFER_SIZE = 10
 
