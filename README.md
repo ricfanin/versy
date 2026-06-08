@@ -139,8 +139,8 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 1. **Power Up**: Turn on the robot base. Ensure both the MSP432 and the Raspberry Pi boot up and the FastAPI server is running.
 2. **Connect**: Open the Versy app on your Android device. Go to the Settings panel and insert the IP address of the Raspberry Pi.
-3. **Manual Control**: Navigate to the **Joystick Screen** to manually control the omni-wheels and test the movement.
-4. **Autonomous Mode**: Place an Aruco marker in the camera's field of view. Switch to the **Pour Screen** to begin the autonomous sequence, where the robot will approach the target (using Aruco and YOLO segmentation) and trigger the pump.
+3. **Manual Control**: Navigate to the Joystick Screen to manually control the omni-wheels and test the movement.
+4. **Autonomous Mode**: Place an Aruco marker in the camera's field of view. Switch to the Pour Screen to begin the autonomous sequence, where the robot will approach the target (using Aruco and YOLO segmentation) and trigger the pump.
 
 ---
 
