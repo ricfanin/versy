@@ -19,7 +19,6 @@ class MovingState(BaseState):
 
     def __init__(self, state_machine: "StateMachine", marker: dict):
         self.sm = state_machine
-        self.initial_marker = marker
 
         self.target_x = self.sm.robot.FRAME_WIDTH // 2
         self.target_y = (self.sm.robot.FRAME_HEIGHT // 2) - self.TARGET_Y_OFFSET
@@ -72,7 +71,7 @@ class MovingState(BaseState):
                 from .pouring_state import PouringState
 
                 logger.info("Aruco centrato, passo a PouringState")
-                return PouringState(self.sm, self.initial_marker)
+                return PouringState(self.sm)
         else:
             self.on_target_count = 0
         return None
@@ -123,7 +122,7 @@ class MovingState(BaseState):
 
                 logger.error("ARUCO LOST")
                 self.sm.publish(ArucoLostMessage(marker_id=self.marker["id"]))
-                return ScanState(self.sm, self.marker["id"])
+                return ScanState(self.sm)
             return None
 
         error_x = -(self.center_x - self.target_x)

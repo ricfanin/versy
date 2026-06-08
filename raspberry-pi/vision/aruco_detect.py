@@ -17,7 +17,7 @@ class ArucoDetector:
             calibration_path = (
                 Path(__file__).parent.parent / "config" / "camera_calibration.npz"
             )
-        self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
+        self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
         self.aruco_parameters = aruco.DetectorParameters()
 
         # Piu' finestre di soglia adattiva (6 invece di 3)
@@ -279,5 +279,6 @@ class ArucoDetector:
 
         roll = (np.degrees(x)) % 360 - 180
         pitch = (np.degrees(y) + 180) % 360 - 180
-        yaw = (np.degrees(z) + 180) % 360 - 180
+        # Yaw=0 quando il marker è dritto (non ruotato di 180° nel suo piano).
+        yaw = np.degrees(z) % 360 - 180
         return roll, pitch, yaw
