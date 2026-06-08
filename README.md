@@ -2,7 +2,7 @@
 
 Versy is a robotic system featuring an omnidirectional mobile base ([Kiwi Drive](https://en.wikipedia.org/wiki/Kiwi_drive)) and a liquid pump (1 motor), controlled by an MSP432 microcontroller and a Raspberry Pi. Its goal is to autonomously pour liquid into drinks. The system includes an Android companion app for remote manual operation (Joystick) and autonomous tasks (Pouring based on computer vision, Aruco markers, and YOLO segmentation).
 
-<img src="images/versy.png" alt="Versy" width="350">
+<img src="images/versy.jpg" alt="Versy" width="350">
 
 ---
 
@@ -11,19 +11,22 @@ Versy is a robotic system featuring an omnidirectional mobile base ([Kiwi Drive]
 ### Hardware
 
 * **MSP432P401R LaunchPad**: Real-time microcontroller for PWM generation.<br>
-    <img src="images/msp432.png" alt="MSP432" width="250">
+    <img src="images/msp432.png" alt="MSP432" width="200">
 
 * **Motor Drivers**: 2 drivers. An MC33926 driving 2 omni-wheel motors, and a Pololu Dual VNH5019 driving the third omni-wheel motor and the pump.<br>
-    <img src="images/driver.png" alt="MC33926 Driver" width="250"> <img src="images/driver2.png" alt="Pololu Dual VNH5019 Driver" width="250">
+    <img src="images/driver.png" alt="MC33926 Driver" width="200"> <img src="images/driver2.png" alt="Pololu Dual VNH5019 Driver" width="200">
 
 * **Motors**: 3x DC motors for omni-wheels (kiwi-drive) + 1 DC pump.<br>
-    <img src="images/motor_dc.png" alt="DC Motors" width="250"> <img src="images/pump.png" alt="DC Pump" width="250">
+    <img src="images/motor_dc.png" alt="DC Motors" width="200"> <img src="images/pump.png" alt="DC Pump" width="200">
 
 * **ToF**: 1 frontal ToF vl53l0x, used to calibrate the correct distance between the robot and the glass.<br>
-    <img src="images/ToF.png" alt="ToF Sensor" width="250">
+    <img src="images/ToF.png" alt="ToF Sensor" width="200">
+
+* **Custom PCB**: A custom PCB recovered from an old project, reused to route power and signals between the MSP432, the Raspberry Pi, the motor drivers, and the sensors.<br>
+    <img src="images/schematic.png" alt="Board Schematic" width="650"> <img src="images/schematictrace.png" alt="Board Traces" width="500">
 
 * **Raspberry Pi 4 (with Camera Module)**: Main computation unit, computer vision, and I2C master.<br>
-    <img src="images/raspberrypi4.png" alt="Raspberry Pi 4" width="250">
+    <img src="images/raspberrypi4.png" alt="Raspberry Pi 4" width="350">
 
 * **Android Device**: Smartphone or tablet to run the companion app.<br>
     
@@ -34,6 +37,8 @@ Versy is a robotic system featuring an omnidirectional mobile base ([Kiwi Drive]
 *   **Python 3.x**: On Raspberry Pi (FastAPI, WebSockets, OpenCV, Picamera2, ONNXRuntime).
 *   **Android Studio**: To build the Kotlin/Jetpack Compose Android app.
 *   **Ultralytics (YOLOv8)**: For training the computer vision segmentation models.
+*   **Fusion 360**: For the 3D CAD design of the robot.
+*   **Bambu Studio**: For slicing and preparing the 3D-printed parts.
 
 ---
 
@@ -97,13 +102,13 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 ---
 
-## 3. How to Build, Burn, and Run the Project
+## 3. How to Build, Flash, and Run the Project
 
 ### A. MSP432 Firmware
 1. Open **Code Composer Studio**.
 2. Import the project located in the `msp/` folder into your workspace.
 3. Build the project (`Project -> Build Project`).
-4. Connect the MSP432 LaunchPad via USB and click the **Debug** (or Flash) icon to burn the firmware.
+4. Connect the MSP432 LaunchPad via USB and click the **Debug** (or Flash) icon to flash the firmware.
 
 ### B. Raspberry Pi Backend & Camera Calibration
 1. Connect to the Raspberry Pi and navigate to the `raspberry-pi` folder.
