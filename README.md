@@ -7,7 +7,7 @@ Versy is a robotic system featuring an omnidirectional mobile base (3 motors) an
 ## 1. Hardware and Software Requirements
 
 ### Hardware
-*   ![*MSP432P401R LaunchPad**: Real-time microcontroller for PWM generation.](images/msp432.png)
+*   **MSP432P401R LaunchPad**: Real-time microcontroller for PWM generation.(images/msp432.png)
 *   **Motor Drivers**: 2x MC33926 drivers for motors and pump.
 *   **Motors**: 3x DC motors for omni-wheels (kiwi-drive) + 1 DC pump.
 *   **ToF**: 1 frontal ToF vl53l0x, calibrate the correct distance between robot and glass.
