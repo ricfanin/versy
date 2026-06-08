@@ -147,7 +147,7 @@ Here is a breakdown of the most important files driving the logic in each direct
 ## 5. Media Links
 
 *   **PowerPoint Presentation**: [https://youtu.be/0izqmVGTUHI?si=aVkfisXJMKIOZBLL]
-*   **YouTube Video**:  [link](https://youtu.be/0izqmVGTUHI?si=aVkfisXJMKIOZBLL)
+*   **YouTube Video**:  [Versy-Video](https://youtu.be/0izqmVGTUHI?si=aVkfisXJMKIOZBLL)
 
 ---
 
