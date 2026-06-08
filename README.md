@@ -101,17 +101,21 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 ### B. Raspberry Pi Backend & Camera Calibration
 1. Connect to the Raspberry Pi and navigate to the `raspberry-pi` folder.
-2. Install the required Python packages:
+2. Install picamera2 required libraries:
+   ```bash
+   sudo apt install python3-libcamera python3-kms-cxx python3-picamera2
+   ```
+3. Install the required Python packages:
    ```bash
    pip install -r requirements.txt
    ```
-3. **Camera Calibration**: Before using vision features, run the calibration script:
+4. **Camera Calibration**: Before using vision features, run the calibration script:
    ```bash
    python config/camera_calibration.py
    ```
    * Choose option **1** to capture images. Hold a printed chessboard in front of the camera and press `SPACE` when the corners are highlighted in green (capture ~20 images). Press `ESC` when done.
    * Choose option **2** to perform the calibration. This will generate a `camera_calibration.npz` file containing the camera matrix and distortion coefficients.
-4. Start the main server:
+5. Start the main server:
    ```bash
    python main.py
    ```
@@ -147,7 +151,7 @@ Here is a breakdown of the most important files driving the logic in each direct
 
 ## 6. Team Members & Contributions
 
-*   **Daniele De Vido**: [Descrizione di cosa ha fatto Daniele, es. sviluppo firmware MSP432, logica motori...]
+*   **Daniele Dalla Vecchia**: [Descrizione di cosa ha fatto Daniele, es. sviluppo firmware MSP432, logica motori...]
 *   **Francesco Fanton**: [Descrizione di cosa ha fatto Francesco, es. sviluppo Android App, UI/UX in Jetpack Compose...]
 *   **Mattia Tognato**: [Descrizione di cosa ha fatto Mattia, es. addestramento rete YOLO, script di segmentazione...]
 *   **Riccardo Fanin**: [Descrizione di cosa ha fatto Riccardo, es. backend Raspberry Pi, WebSockets, calibrazione camera...]

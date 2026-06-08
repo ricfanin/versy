@@ -17,8 +17,6 @@ numpy
 opencv-contrib-python
 
 # Camera (Raspberry Pi)
-# Note: picamera2 typically requires system-level installation:
-# sudo apt install python3-libcamera python3-kms-cxx python3-picamera2
 picamera2
 
 # Hardware & Sensors (Raspberry Pi)
