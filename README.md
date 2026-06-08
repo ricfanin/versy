@@ -15,7 +15,7 @@ Versy is a robotic system featuring an omnidirectional mobile base (3 motors) an
     <img src="images/driver.png" alt="Motor Drivers" width="250">
 
 * **Motors**: 3x DC motors for omni-wheels (kiwi-drive) + 1 DC pump.<br>
-    <img src="images/motor_dc.png" alt="DC Motors" width="250">
+    <img src="images/motor_dc.png" alt="DC Motors" width="250"> <img src="images/pump.png" alt="DC Pump" width="250">
 
 * **ToF**: 1 frontal ToF vl53l0x, calibrate the correct distance between robot and glass.<br>
     <img src="images/ToF.png" alt="ToF Sensor" width="250">
