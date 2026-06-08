@@ -41,7 +41,7 @@ class MovingState(BaseState):
         self.yaw = marker["angles"][2]
 
     def _compute_velocities(self, error_x: float, error_y: float) -> tuple:
-        # laterale: bang-bang con deadband
+        # laterale
         if abs(error_x) < 25:
             vx = 0
         elif error_x > 0:
@@ -49,7 +49,7 @@ class MovingState(BaseState):
         else:
             vx = -35
 
-        # avanti/indietro: proporzionale, clampato
+        # avanti/indietro: proporzionale
         vy = max(-50, min(error_y * 0.5, 40))
 
         # yaw: correggi solo quando circa centrato

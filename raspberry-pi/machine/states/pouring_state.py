@@ -1,7 +1,6 @@
 from machine.state_machine import StateMachine
 from utils.debug import get_logger
 from machine.base_state import BaseState
-import time
 
 logger = get_logger("states.pouring")
 
