@@ -70,6 +70,7 @@ Here is a breakdown of the most important files driving the logic in each direct
 │       └── handlers/
 │           ├── action_handler.py             # Parses App commands (e.g. move joystick)
 │           └── aruco_handler.py              # Streams detected markers back to the App
+│           └── router.py                     # Routes messages to the correct handler 
 │
 ├── versy_app/                                # Android Application
 │   └── app/src/main/java/com/example/versy_app/
