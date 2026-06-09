@@ -14,14 +14,14 @@ volatile uint8_t n_motore = 0;   //Numero motore: 0 o 1
 volatile int16_t value = 0;  //Speed value: da -128 a +127(sarà moltiplicato per 4)
 volatile uint8_t byte_count = 0;   //Counter di byte per transazione I2C
 
-/* Global variables for deferred UART debug printing
- * Perchè stampare via UART nell'interrupt è lento, quindi imposto flag e stampa nel main
+/* variabili globali per la stampa di debug via UART, fatta dopo (non dentro l'ISR)
+ * stampare via UART nell'interrupt è lento, quindi setto un flag e stampo nel main
  * */
-volatile uint8_t debug_ready = 0;  //Flag: new debug message ready to print
-volatile uint8_t debug_motor = 0;  //Motor number for debug message (0:M!, 1: M2 , 2: M3)
+volatile uint8_t debug_ready = 0;  //flag: c'è un nuovo messaggio di debug da stampare
+volatile uint8_t debug_motor = 0;  //numero del motore del messaggio (0:M1, 1:M2, 2:M3)
 volatile int16_t debug_value = 0;  //Valore per il messaggio di debug
 
-/* Function prototypes */
+/* Prototipi delle funzioni */
 static void initSystemClock(void);
 static void initUART(void);
 static void uartPrint(const char* str);
@@ -68,47 +68,47 @@ static void initSystemClock(void){
     FLCTL->BANK1_RDCTL |= FLCTL_BANK1_RDCTL_WAIT_1; //imposta i bit per WAIT_1
     //MSP432 ha 2 banchi di Flash (BANK0 e BANK1) per accesso alternato
 
-    /* Configure DCO to 48MHz */
-    CS->KEY = CS_KEY_VAL;                   // Unlock CS (Clock System) registers
-    CS->CTL0 = CS_CTL0_DCORSEL_5;          // Set DCO to 48MHz
+    /* Imposto il DCO a 48MHz */
+    CS->KEY = CS_KEY_VAL;                   // sblocco i registri del CS (Clock System)
+    CS->CTL0 = CS_CTL0_DCORSEL_5;          // DCO a 48MHz
 
-    /* Select DCO as source for MCLK and SMCLK with divider = 1 */
+    /* Uso il DCO come sorgente di MCLK e SMCLK, divisore = 1 */
     CS->CTL1 = CS_CTL1_SELM__DCOCLK |      // MCLK = DCO   (MCLK = Master Clock (della CPU), con sorgente DCO)
-               CS_CTL1_DIVM__1 |           // MCLK divider = 1
+               CS_CTL1_DIVM__1 |           // divisore MCLK = 1
                CS_CTL1_SELS__DCOCLK |      // SMCLK = DCO  (SMCLK = SubMaster CLock (delle periferiche))
-               CS_CTL1_DIVS__1;            // SMCLK divider = 1
+               CS_CTL1_DIVS__1;            // divisore SMCLK = 1
     CS->KEY = 0;     //così non si può più modificare il clock
 }
 
 static void initUART(void){
-    /* Configure UART pins P1.2 (RX) and P1.3 (TX)
-     * Primary module function: SEL0 = 1, SEL1 = 0
-     * P1.2= RX ; P1.3 = Tx
+    /* configuro i pin UART P1.2 (RX) e P1.3 (TX)
+     * funzione primaria del modulo: SEL0 = 1, SEL1 = 0
+     * P1.2 = RX ; P1.3 = TX
      */
     P1->SEL0 |= (BIT2 | BIT3);
     P1->SEL1 &= ~(BIT2 | BIT3);
 
-    /* Put EUSCI_A0 in reset state while configuring
+    /* tengo EUSCI_A0 in reset mentre lo configuro
      * EUSCI_A0 = Enhanced Universal Serial COmmunication Interface A0
      * SWRST = Software Reset
      *  */
     EUSCI_A0->CTLW0 |= EUSCI_A_CTLW0_SWRST;
 
-    /* Configure EUSCI_A0:
-     * - EUSCI_A_CTLW0_SSEL__SMCLK: SMCLK as clock source
-     * - EUSCI_A_CTLW0_SWRST: Keep in reset
+    /* configuro EUSCI_A0:
+     * - EUSCI_A_CTLW0_SSEL__SMCLK: SMCLK come sorgente di clock
+     * - EUSCI_A_CTLW0_SWRST: lo lascio in reset
      * Infatti UART ha bisogno di un clock per generare i bit rate
      */
     EUSCI_A0->CTLW0 = EUSCI_A_CTLW0_SWRST |
                       EUSCI_A_CTLW0_SSEL__SMCLK;
 
-    /* Baud rate configuration for 115200(bit al secondo) @ 48MHz */
-     EUSCI_A0->BRW = 26;                     // Clock prescaler (UCBRx)
+    /* impostazione del baud rate a 115200 (bit al secondo) @ 48MHz */
+     EUSCI_A0->BRW = 26;                     // prescaler del clock (UCBRx)
      EUSCI_A0->MCTLW = (0xD6 << EUSCI_A_MCTLW_BRS_OFS) |  // UCBRSx = 0xD6
                          (0 << EUSCI_A_MCTLW_BRF_OFS) |      // UCBRFx = 0
-                         EUSCI_A_MCTLW_OS16;                  // Oversampling mode
+                         EUSCI_A_MCTLW_OS16;                  // modalità oversampling
 
-     /* Release from reset */
+     /* tolgo il reset */
      EUSCI_A0->CTLW0 &= ~EUSCI_A_CTLW0_SWRST; //Toglie reset -> UART attiva e funzionante
 }
 
@@ -128,8 +128,8 @@ static void uartPrintInt(int32_t value){
 }
 
 static void initI2CSlave(void){
-    /*Configure I2C pins P1.6(SDA) e P1.7 (SCL)
-     * Uso funzione primaria
+    /*configuro i pin I2C P1.6 (SDA) e P1.7 (SCL)
+     * uso la funzione primaria
      */
     P1->SEL0 |= (BIT6 | BIT7);
     P1->SEL1 &= ~(BIT6 | BIT7);
@@ -137,34 +137,34 @@ static void initI2CSlave(void){
     /*Metto EUSCI_B0 in reset state  mentre configro*/
     EUSCI_B0->CTLW0 = EUSCI_B_CTLW0_SWRST;
 
-/* Configure EUSCI_B0 for I2C mode:
-     * - EUSCI_B_CTLW0_MODE_3: I2C mode
-     * - EUSCI_B_CTLW0_SYNC: Synchronous mode
-     * - UCMST = 0 (default): Slave mode
-     * - EUSCI_B_CTLW0_SSEL__SMCLK: SMCLK as clock source, non per generare SCL (quello la fa il master)
+/* configuro EUSCI_B0 in modalità I2C:
+     * - EUSCI_B_CTLW0_MODE_3: modalità I2C
+     * - EUSCI_B_CTLW0_SYNC: modalità sincrona
+     * - UCMST = 0 (default): modalità slave
+     * - EUSCI_B_CTLW0_SSEL__SMCLK: SMCLK come sorgente di clock, non per generare SCL (quello la fa il master)
      */
     EUSCI_B0->CTLW0 = EUSCI_B_CTLW0_SWRST |
                       EUSCI_B_CTLW0_MODE_3 |
                       EUSCI_B_CTLW0_SYNC |
                       EUSCI_B_CTLW0_SSEL__SMCLK;
 
-    /* Set own slave address (7-bit) and enable it
-         * I2COA0: Own address register 0
+    /* imposto il mio indirizzo slave (7 bit) e lo abilito
+         * I2COA0: registro del proprio indirizzo 0
          * I2C_SLAVE_ADDRESS = 0x10
-         * UCOAEN: Own address enable
+         * UCOAEN: abilita il proprio indirizzo
          */
      EUSCI_B0->I2COA0 = I2C_SLAVE_ADDRESS | EUSCI_B_I2COA0_OAEN;
 
-     /* Release from reset */
+     /* tolgo il reset */
      EUSCI_B0->CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
 
-     /* Enable I2C interrupts:
+     /* abilito gli interrupt I2C:
           * - RXIE0: Receive interrupt enable, si attiva quando arriva un byte dal master
           * - STPIE: Stop condition interrupt enable, si attiva quando master invia STOP I2c
-          * - STTIE: Start condition interrupt enable (for reliable transaction detection), quando master invia START I2C
+          * - STTIE: Start condition interrupt enable, quando il master invia START I2C
       */
      EUSCI_B0->IE |= EUSCI_B_IE_RXIE0 | EUSCI_B_IE_STPIE | EUSCI_B_IE_STTIE;
-     /* Enable EUSCI_B0 interrupt in NVIC */
+     /* abilito l'interrupt di EUSCI_B0 nel NVIC */
      NVIC_EnableIRQ(EUSCIB0_IRQn);
      //Setto priorità I2C a 2. Priorità 0 e 1 riservata per emergenze critiche e timer critici
      NVIC_SetPriority(EUSCIB0_IRQn, 2);
@@ -212,7 +212,7 @@ void EUSCIB0_IRQHandler(void){
         else if(byte_count == 1){
             value = (int8_t)received_byte; //casto a intero perchè vogliamo segno
             decodeAndSetMotor();
-            /* Set flag for deferred UART debug printing (non-blocking) */
+            /* setto il flag per la stampa di debug, la faccio dopo nel main (non-blocking) */
             debug_motor = n_motore;
             debug_value = value;
             debug_ready = 1;

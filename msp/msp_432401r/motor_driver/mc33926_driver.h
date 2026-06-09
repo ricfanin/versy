@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include "msp432.h"
 
-/* Pin Configuration (default for MSP432P401R LaunchPad) */
+/* configurazione dei pin (default per la MSP432P401R LaunchPad) */
 
 /* Motor 1 pins --------------------------------------*/
 #define M1_DIR_PORT P6  //Porta di direzione
@@ -30,9 +30,9 @@
 
 /*Motor 3 pins -----------------------------------*/
 #define M3_DIRA_PORT P6
-#define M3_DIRA_PIN BIT7   //forward :1
+#define M3_DIRA_PIN BIT7   //avanti :1
 #define M3_DIRB_PORT P5
-#define M3_DIRB_PIN BIT7   //forward : 0
+#define M3_DIRB_PIN BIT7   //avanti : 0
 #define M3_PWM_PORT P2
 #define M3_PWM_PIN BIT7  //pin P2.7 controllato da Timer_A0.4
 #define M3_FB_ADC_CH 9
@@ -87,7 +87,7 @@ void MC33926_SetMotor3Speed(int16_t speed);
 
 /*Controlla Motor 4 (pompa - ON/OFF, no PWM)
  * Parametro speed:
- *     -Positivo: pompa accesa (forward)
+ *     -Positivo: pompa accesa (avanti)
  *     -Negativo: pompa accesa (reverse)
  *     -Zero: pompa spenta
  */

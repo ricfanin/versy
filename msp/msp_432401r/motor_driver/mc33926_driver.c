@@ -24,7 +24,7 @@ static void initGPIO(void){
     M1_DIR_PORT->OUT &= ~M1_DIR_PIN; //metto motore in modalità "avanti"
 
     M2_DIR_PORT->DIR |= M2_DIR_PIN;
-    M2_DIR_PORT->OUT &= ~M2_DIR_PIN;    // Default: forward (LOW)
+    M2_DIR_PORT->OUT &= ~M2_DIR_PIN;    // default: avanti (LOW)
 
     M3_DIRA_PORT->DIR |= M3_DIRA_PIN;
     M3_DIRB_PORT->DIR |= M3_DIRA_PIN;
@@ -76,7 +76,7 @@ static void initPWM(void){
     //per poi ritornare HIGH quando raggiunge CCR0
     TIMER_A0->CCTL[1] = OUTMOD_7;
     TIMER_A0->CCR[1] = 0; //duty cycle iniziale al 0 %
-    /* Configure CCR2 for Motor 2 PWM (P2.5 = TA0.2) */
+    /* CCR2 per il PWM del Motor 2 (P2.5 = TA0.2) */
     TIMER_A0->CCTL[2] = OUTMOD_7;
     TIMER_A0->CCR[2] = 0;
     /* COnfigura CCR3 per motore 3 */
@@ -96,11 +96,11 @@ static void initADC(void){
     //L'ADC converte tensioni (0-3.3V) in numeri digitali di 14 bit (16384 valori possibili)
         //0V -> 0 ; 1.65V -> 8192 ; 3.3V -> 16383
     ADC14->CTL1 = ADC14_CTL1_RES_3;
-    /* Configure Memory Control for Motor 1 (MEM13, channel A13) */
+    /* Memory Control per Motor 1 (MEM13, canale A13) */
     ADC14->MCTL[M1_FB_MEM] = ADC14_MCTLN_INCH_13;
-    /* Configure Memory Control for Motor 2 (MEM11, channel A11) */
+    /* Memory Control per Motor 2 (MEM11, canale A11) */
     ADC14->MCTL[M2_FB_MEM] = ADC14_MCTLN_INCH_11;
-    /* Configure Memory Control for Motor 3 (MEM9, channel A9) */
+    /* Memory Control per Motor 3 (MEM9, canale A9) */
     ADC14->MCTL[M3_FB_MEM] = ADC14_MCTLN_INCH_9;
 }
 
@@ -114,9 +114,9 @@ void MC33926_SetMotor1Speed(int16_t speed){
         speed = MAX_SPEED; //tronca
     }
     if (reverse){
-        M1_DIR_PORT->OUT |= M1_DIR_PIN; //HIGH = backward
+        M1_DIR_PORT->OUT |= M1_DIR_PIN; //HIGH = indietro
     }else{
-        M1_DIR_PORT->OUT &= ~M1_DIR_PIN; //LOW = forward
+        M1_DIR_PORT->OUT &= ~M1_DIR_PIN; //LOW = avanti
     }
     //uso uint32_t perchè facendo *2400 rischio di andare in overflow
     uint16_t dutyCycle = ((uint32_t)speed * PWM_PERIOD)/MAX_SPEED;
@@ -133,9 +133,9 @@ void MC33926_SetMotor2Speed(int16_t speed){
         speed = MAX_SPEED; //tronca
     }
     if (reverse){
-        M2_DIR_PORT->OUT |= M2_DIR_PIN; //HIGH = backward
+        M2_DIR_PORT->OUT |= M2_DIR_PIN; //HIGH = indietro
     }else{
-        M2_DIR_PORT->OUT &= ~M2_DIR_PIN; //LOW = forward
+        M2_DIR_PORT->OUT &= ~M2_DIR_PIN; //LOW = avanti
     }
     //uso uint32_t perchè facendo *2400 rischio di andare in overflow
     uint16_t dutyCycle = ((uint32_t)speed * PWM_PERIOD)/MAX_SPEED;
@@ -199,25 +199,16 @@ static uint16_t readADC(uint8_t memIndex){ //memIndex = 13 o 11 per leggere Moto
     //meglio usare interrupt?
     while (ADC14->CTL0 & ADC14_CTL0_BUSY); //ADC14_CTL0_BUSY = bit che indica "conversione in corso"
 
-    /* Disable conversion */
+    /* fermo la conversione */
     ADC14->CTL0 &= ~ADC14_CTL0_ENC;
-    /* Return result from memory */
+    /* ritorno il risultato dalla memoria */
     return ADC14->MEM[memIndex];
 }
 
 uint16_t MC33926_GetMotor1Current(void){
     uint16_t adcValue = readADC(M1_FB_MEM);
-    /* Current calculation:
-         * MC33926 current sense: 525mV per Ampere
-         * MSP432 ADC: 14-bit (0-16383), 3.3V reference
-         *
-         * Voltage (V) = adcValue * 3.3 / 16384
-         * Current (A) = Voltage / 0.525
-         * Current (mA) = adcValue * 3.3 * 1000 / (0.525 * 16384)
-         *              = adcValue * 3300 / 8601.6
-         *              = adcValue * 0.3837
-         *              ≈ adcValue * 6287 / 16384
-         */
+    // sense del MC33926: 525mV/A, ADC a 14 bit su 3.3V
+    // quindi mA = adc*3.3*1000/(0.525*16384) ~= adc*6287/16384
         uint32_t currentMilliamps = ((uint32_t)adcValue * 6287) / 16384;
         return (uint16_t)currentMilliamps;
 }
@@ -237,18 +228,18 @@ uint16_t MC33926_GetMotor3Current(void)
 
 uint8_t MC33926_GetFault(void)
 {
-    /* nSF pin is active LOW (LOW = fault present) */
+    /* il pin nSF è attivo basso (LOW = c'è un fault) */
     return (NSF_PORT->IN & NSF_PIN) ? 0 : 1;
 }
 void MC33926_Enable(void)
 {
-    /* nD2 is active HIGH (HIGH = enabled) */
+    /* nD2 è attivo alto (HIGH = abilitato) */
     ND2_PORT->OUT |= ND2_PIN;
 }
 
 void MC33926_Disable(void)
 {
-    /* nD2 is active HIGH (LOW = disabled, coast mode) */
+    /* nD2 è attivo alto (LOW = disabilitato, coast mode) */
     ND2_PORT->OUT &= ~ND2_PIN;
 }
 
